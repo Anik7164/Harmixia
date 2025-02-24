@@ -1,0 +1,174 @@
+<html lang="en">
+<head>
+    <meta charset="utf-8"/>
+    <meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+    <title>Harmixia</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.3/css/all.min.css" rel="stylesheet"/>
+    <style>
+        .modal {
+            display: none;
+            position: fixed;
+            z-index: 50;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            overflow: auto;
+            background-color: rgba(0, 0, 0, 0.5);
+        }
+
+        .modal-content {
+            background-color: #1a1a1a;
+            margin: 15% auto;
+            padding: 20px;
+            border: 1px solid #888;
+            width: 80%;
+            max-width: 400px;
+            border-radius: 8px;
+            max-height: 80%;
+            overflow-y: auto;
+        }
+    </style>
+</head>
+<body class="bg-black text-white h-screen flex">
+<!-- Sidebar -->
+<div class="w-1/4 bg-gray-900 p-4">
+    <div class="mb-4">
+        <h2 class="text-lg font-bold">Your Library</h2>
+        <ul class="mt-2">
+            <li class="mt-2">New Playlist 1</li>
+            <li class="mt-2">New Playlist 2</li>
+        </ul>
+    </div>
+    <div class="absolute bottom-0 left-0 w-full p-4 bg-gray-800 flex items-center">
+        <img alt="Album cover of Mine by Aimer" class="w-12 h-12" height="50"
+             src="https://storage.googleapis.com/a1aa/image/TTYgHf63DIY_YW_ERx3e0cOyYv1StYqllw0cglMEOmo.jpg" width="50"/>
+        <div class="ml-2">
+            <p class="text-sm">Mine</p>
+            <p class="text-xs text-gray-400">Aimer</p>
+        </div>
+        <button id="playPauseButton" class="ml-auto text-white text-2xl focus:outline-none" onclick="togglePlayPause()">
+            <i id="playPauseIcon" class="fas fa-play"></i>
+        </button>
+    </div>
+</div>
+<!-- Main Content -->
+<div class="flex-1 p-4">
+    <!-- Header -->
+    <div class="flex justify-between items-center mb-4">
+        <div class="flex items-center space-x-2">
+            <i class="fas fa-search text-xl"></i>
+            <input class="bg-gray-800 text-white p-2 rounded w-1/2" placeholder="Search..." type="text"/>
+            <button class="text-white text-xl focus:outline-none">
+                <i class="fas fa-camera"></i>
+            </button>
+        </div>
+        <div class="flex items-center">
+            <span class="mr-2 cursor-pointer" onclick="openModal()">Login</span>
+            <i class="fas fa-user-circle text-2xl"></i>
+        </div>
+    </div>
+    <!-- Rising Artists -->
+    <div class="mb-4">
+        <h2 class="text-xl font-bold">Rising Artists</h2>
+        <div class="flex mt-2 space-x-4">
+            <div class="text-center">
+                <img alt="Artist Aimer" class="w-24 h-24 rounded-full" height="100"
+                     src="https://storage.googleapis.com/a1aa/image/7qOwGMZakNZMwRhrxBb7pCS27gv-baMtttFS-H4CTZQ.jpg"
+                     width="100"/>
+                <p class="mt-2">Aimer</p>
+            </div>
+            <div class="text-center">
+                <img alt="Artist Upodnisha" class="w-24 h-24 rounded-full" height="100"
+                     src="https://storage.googleapis.com/a1aa/image/uoPPzu3aCMHk2W7QzRWL0vEyzqsx9030WALem-GjPZY.jpg"
+                     width="100"/>
+                <p class="mt-2">Upodnisha</p>
+            </div>
+            <div class="text-center">
+                <img alt="Artist Vibe" class="w-24 h-24 rounded-full" height="100"
+                     src="https://storage.googleapis.com/a1aa/image/uvW-o1Ga_ybN_rgulVxh33KRbJlRQVmpiAj_zx2uNAQ.jpg"
+                     width="100"/>
+                <p class="mt-2">Vibe</p>
+            </div>
+        </div>
+    </div>
+    <!-- Top Songs -->
+    <div>
+        <h2 class="text-xl font-bold">Top Songs</h2>
+        <div class="flex mt-2 space-x-4">
+            <div class="text-center">
+                <img alt="Album cover of Mine by Aimer" class="w-36 h-36" height="150"
+                     src="https://storage.googleapis.com/a1aa/image/TTYgHf63DIY_YW_ERx3e0cOyYv1StYqllw0cglMEOmo.jpg"
+                     width="150"/>
+                <p class="mt-2">Mine</p>
+                <p class="text-sm text-gray-400">Aimer</p>
+            </div>
+            <div class="text-center">
+                <img alt="Album cover of another song" class="w-36 h-36" height="150"
+                     src="https://storage.googleapis.com/a1aa/image/k7bdxa6C6VAPcaogm5tIeLUEo_qOmof3NIe7AN6ppv0.jpg"
+                     width="150"/>
+                <p class="mt-2">Song Title</p>
+                <p class="text-sm text-gray-400">Artist Name</p>
+            </div>
+            <div class="text-center">
+                <img alt="Album cover of another song" class="w-36 h-36" height="150"
+                     src="https://storage.googleapis.com/a1aa/image/k7bdxa6C6VAPcaogm5tIeLUEo_qOmof3NIe7AN6ppv0.jpg"
+                     width="150"/>
+                <p class="mt-2">Song Title</p>
+                <p class="text-sm text-gray-400">Artist Name</p>
+            </div>
+        </div>
+    </div>
+</div>
+<!-- Now Playing -->
+<div class="w-1/4 bg-gray-900 p-4">
+    <h2 class="text-xl font-bold mb-4">Escalate</h2>
+    <img alt="Album cover of Escalate" class="w-full h-auto" height="300"
+         src="https://storage.googleapis.com/a1aa/image/JAvBtAN75IxM0qwF5uO6BglyMVGJLIRSbekdoplIoeg.jpg" width="300"/>
+    <div class="mt-4">
+        <p class="text-lg">Mine</p>
+        <p class="text-sm text-gray-400">Aimer</p>
+    </div>
+</div>
+
+<!-- The Modal -->
+<div id="loginModal" class="modal">
+    <div class="modal-content">
+        <span class="close cursor-pointer text-white text-2xl" onclick="closeModal()">&times;</span>
+        <h2 class="text-xl font-bold mb-4">Login</h2>
+        <a href="..\Two Factor Authentication using PHP\index.php" class="w-full bg-blue-600 p-2 rounded mb-4 text-center block">Login</a>
+        <a href="..\Two Factor Authentication using PHP\registration.php" class="w-full bg-blue-600 p-2 rounded mb-4 text-center block">Sign Up</a>
+    </div>
+</div>
+
+<script>
+    function openModal() {
+        document.getElementById("loginModal").style.display = "block";
+    }
+
+    function closeModal() {
+        document.getElementById("loginModal").style.display = "none";
+    }
+
+    function showSignUp() {
+        // Add your sign-up logic here
+    }
+
+    function showLogin() {
+        // Add your login logic here
+    }
+
+    function togglePlayPause() {
+        const playPauseIcon = document.getElementById("playPauseIcon");
+        if (playPauseIcon.classList.contains("fa-play")) {
+            playPauseIcon.classList.remove("fa-play");
+            playPauseIcon.classList.add("fa-pause");
+        } else {
+            playPauseIcon.classList.remove("fa-pause");
+            playPauseIcon.classList.add("fa-play");
+        }
+    }
+</script>
+</body>
+</html>

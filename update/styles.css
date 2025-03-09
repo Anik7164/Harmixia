@@ -1,0 +1,75 @@
+body {
+  font-family: Arial, sans-serif;
+  background-color: #1DB954;
+  color: white;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  height: 100vh;
+  margin: 0;
+}
+
+.container {
+  text-align: center;
+  background-color: #191414;
+  padding: 20px;
+  border-radius: 10px;
+  box-shadow: 0 0 10px rgba(0, 0, 0, 0.5);
+}
+
+h1 {
+  margin-bottom: 20px;
+}
+
+#search-input {
+  padding: 10px;
+  width: 300px;
+  border: none;
+  border-radius: 5px;
+  font-size: 16px;
+}
+
+#search-button {
+  padding: 10px 20px;
+  font-size: 16px;
+  background-color: #1DB954;
+  color: white;
+  border: none;
+  border-radius: 5px;
+  cursor: pointer;
+  margin-left: 10px;
+}
+
+#search-button:hover {
+  background-color: #1ed760;
+}
+
+#results {
+  margin-top: 20px;
+  text-align: left;
+}
+
+.track {
+  display: flex;
+  align-items: center;
+  margin-bottom: 10px;
+}
+
+.track img {
+  width: 50px;
+  height: 50px;
+  margin-right: 10px;
+}
+
+.track-info {
+  display: flex;
+  flex-direction: column;
+}
+
+.track-name {
+  font-weight: bold;
+}
+
+.track-artist {
+  color: #ccc;
+}

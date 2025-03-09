@@ -31,9 +31,9 @@
         }
     </style>
 </head>
-<body class="bg-black text-white h-screen flex">
+<body class="bg-black text-white h-screen flex flex-col md:flex-row">
 <!-- Sidebar -->
-<div class="w-1/4 bg-gray-900 p-4">
+<div class="w-full md:w-1/4 bg-gray-900 p-4 flex flex-col">
     <div class="mb-4">
         <h2 class="text-lg font-bold">Your Library</h2>
         <ul class="mt-2">
@@ -41,7 +41,7 @@
             <li class="mt-2">New Playlist 2</li>
         </ul>
     </div>
-    <div class="absolute bottom-0 left-0 w-full p-4 bg-gray-800 flex items-center">
+    <div class="mt-auto p-4 bg-gray-800 flex items-center">
         <img alt="Album cover of Mine by Aimer" class="w-12 h-12" height="50"
              src="https://storage.googleapis.com/a1aa/image/TTYgHf63DIY_YW_ERx3e0cOyYv1StYqllw0cglMEOmo.jpg" width="50"/>
         <div class="ml-2">
@@ -58,10 +58,10 @@
     <!-- Header -->
     <div class="flex justify-between items-center mb-4">
         <div class="flex items-center space-x-2">
-            <i class="fas fa-search text-xl"></i>
-            <input class="bg-gray-800 text-white p-2 rounded w-1/2" placeholder="Search..." type="text"/>
-            <button class="text-white text-xl focus:outline-none">
-                <i class="fas fa-camera"></i>
+            <i class="fas fa-camera"></i>
+            <input id="search-input" class="bg-gray-800 text-white p-2 rounded w-1/2" placeholder="Search..." type="text"/>
+            <button id="search-button" class="text-white text-xl focus:outline-none">
+                <i class="fas fa-search text-xl"></i>
             </button>
         </div>
         <div class="flex items-center">
@@ -69,10 +69,12 @@
             <i class="fas fa-user-circle text-2xl"></i>
         </div>
     </div>
+    <!-- Search Results -->
+    <div id="results" class="mb-4"></div>
     <!-- Rising Artists -->
     <div class="mb-4">
         <h2 class="text-xl font-bold">Rising Artists</h2>
-        <div class="flex mt-2 space-x-4">
+        <div class="flex mt-2 space-x-4 overflow-x-auto">
             <div class="text-center">
                 <img alt="Artist Aimer" class="w-24 h-24 rounded-full" height="100"
                      src="https://storage.googleapis.com/a1aa/image/7qOwGMZakNZMwRhrxBb7pCS27gv-baMtttFS-H4CTZQ.jpg"
@@ -96,7 +98,7 @@
     <!-- Top Songs -->
     <div>
         <h2 class="text-xl font-bold">Top Songs</h2>
-        <div class="flex mt-2 space-x-4">
+        <div class="flex mt-2 space-x-4 overflow-x-auto">
             <div class="text-center">
                 <img alt="Album cover of Mine by Aimer" class="w-36 h-36" height="150"
                      src="https://storage.googleapis.com/a1aa/image/TTYgHf63DIY_YW_ERx3e0cOyYv1StYqllw0cglMEOmo.jpg"
@@ -122,8 +124,8 @@
     </div>
 </div>
 <!-- Now Playing -->
-<div class="w-1/4 bg-gray-900 p-4">
-    <h2 class="text-xl font-bold mb-4">Escalate</h2>
+<div class="w-full md:w-1/4 bg-gray-900 p-4">
+    <h2 class="text-xl font-bold mb-4">Now Playing</h2>
     <img alt="Album cover of Escalate" class="w-full h-auto" height="300"
          src="https://storage.googleapis.com/a1aa/image/JAvBtAN75IxM0qwF5uO6BglyMVGJLIRSbekdoplIoeg.jpg" width="300"/>
     <div class="mt-4">
@@ -143,6 +145,83 @@
 </div>
 
 <script>
+    const clientId = 'ee31a7f71f474295a798c8180dd03be3'; // Replace with your Client ID
+    const clientSecret = 'd8f98f46ae934b0fa306fbed2f70fb4c'; // Replace with your Client Secret
+
+    const tokenEndpoint = 'https://accounts.spotify.com/api/token';
+    const apiEndpoint = 'https://api.spotify.com/v1';
+
+    async function getAccessToken() {
+        const response = await fetch(tokenEndpoint, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/x-www-form-urlencoded',
+                'Authorization': 'Basic ' + btoa(`${clientId}:${clientSecret}`),
+            },
+            body: new URLSearchParams({
+                grant_type: 'client_credentials',
+            }),
+        });
+
+        const data = await response.json();
+        return data.access_token;
+    }
+
+    async function searchSpotify(query) {
+        const accessToken = await getAccessToken();
+        const response = await fetch(`${apiEndpoint}/search?q=${encodeURIComponent(query)}&type=track,album,artist`, {
+            headers: {
+                'Authorization': `Bearer ${accessToken}`,
+            },
+        });
+
+        const data = await response.json();
+        return data;
+    }
+
+    function displayResults(results) {
+        const resultsContainer = document.getElementById('results');
+        resultsContainer.innerHTML = '';
+
+        if (results.tracks.items.length === 0) {
+            resultsContainer.innerHTML = '<p>No results found.</p>';
+            return;
+        }
+
+        results.tracks.items.forEach(track => {
+            const trackElement = document.createElement('div');
+            trackElement.className = 'track flex items-center space-x-4 mb-4';
+
+            trackElement.innerHTML = `
+                <img src="${track.album.images[0].url}" alt="${track.name}" class="w-16 h-16">
+                <div class="track-info">
+                    <div class="track-name text-lg">${track.name}</div>
+                    <div class="track-artist text-sm text-gray-400">${track.artists.map(artist => artist.name).join(', ')}</div>
+                </div>
+            `;
+
+            resultsContainer.appendChild(trackElement);
+        });
+    }
+
+    document.getElementById('search-button').addEventListener('click', async () => {
+        const query = document.getElementById('search-input').value;
+        if (query) {
+            const results = await searchSpotify(query);
+            displayResults(results);
+        }
+    });
+
+    document.getElementById('search-input').addEventListener('keypress', async (event) => {
+        if (event.key === 'Enter') {
+            const query = document.getElementById('search-input').value;
+            if (query) {
+                const results = await searchSpotify(query);
+                displayResults(results);
+            }
+        }
+    });
+
     function openModal() {
         document.getElementById("loginModal").style.display = "block";
     }
@@ -150,15 +229,6 @@
     function closeModal() {
         document.getElementById("loginModal").style.display = "none";
     }
-
-    function showSignUp() {
-        // Add your sign-up logic here
-    }
-
-    function showLogin() {
-        // Add your login logic here
-    }
-
     function togglePlayPause() {
         const playPauseIcon = document.getElementById("playPauseIcon");
         if (playPauseIcon.classList.contains("fa-play")) {

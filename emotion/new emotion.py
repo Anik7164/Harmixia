@@ -1,76 +1,85 @@
-from keras.models import load_model
-from time import sleep
-from keras.preprocessing.image import img_to_array
-from keras.preprocessing import image
-import cv2 #OpenCV ---> video is a collection of frames
-import numpy as np
-from flask import Flask , render_template
+import cv2
 import time
+from deepface import DeepFace
+from spotify_auth import sp  # Import Spotify authentication
 
-app = Flask(__name__)
+# Load OpenCV face detection model
+face_cascade = cv2.CascadeClassifier(cv2.data.haarcascades + 'haarcascade_frontalface_default.xml')
 
-@app.route('/')
-def index():
-    face_classifier = cv2.CascadeClassifier(r'C:\Users\User\Downloads\Emotify-master\Emotify-master\emotionDetection\haarcascade_frontalface_default.xml')
-    classifier =load_model(r'C:\Users\User\Downloads\Emotify-master\Emotify-master\emotionDetection\model.h5')
+# Emotion to Spotify playlist mapping
+emotion_playlist = {
+    "happy": "spotify:playlist:37i9dQZF1DXdPec7aLTmlC",
+    "sad": "spotify:playlist:37i9dQZF1DX3YSRoSdA634",
+    "angry": "spotify:playlist:37i9dQZF1DX0KpeLFwA3tO",
+    "neutral": "spotify:playlist:37i9dQZF1DWZqd5JICZI0u"
+}
 
-    emotion_labels = ['Angry','Disgust','Fear','Happy','Neutral', 'Sad', 'Surprise']
+# Function to get active Spotify device ID
+def get_active_device():
+    devices = sp.devices()
+    if devices['devices']:
+        return devices['devices'][0]['id']  # Use the first active device
+    else:
+        print("No active Spotify device found. Open Spotify and play a song manually first.")
+        return None
 
-    cap = cv2.VideoCapture(0) # 0 for default camera of personal computer - capture
+# Function to check if the song is still playing
+def is_song_playing():
+    try:
+        playback = sp.current_playback()
+        return playback and playback['is_playing']
+    except:
+        return False
 
-    i=0
-    L={}
-    while True:
-        _,frame=cap.read()
-        labels = []
-        gray = cv2.cvtColor(frame,cv2.COLOR_BGR2GRAY) # converting to grayscale
-        faces = face_classifier.detectMultiScale(gray)
+# Start capturing video
+cap = cv2.VideoCapture(0)
 
-        # making a rectangle box for face
-        for (x,y,w,h) in faces:
-            cv2.rectangle(frame,(x,y),(x+w,y+h),(0,255,255),2)
-            roi_gray = gray[y:y+h,x:x+w] # region of interest = vertical height + horizontal width
-            roi_gray = cv2.resize(roi_gray,(48,48),interpolation=cv2.INTER_AREA) # trained model standard size
+last_detected_emotion = None  # Store last detected emotion
 
-            if np.sum([roi_gray])!=0:
-                roi = roi_gray.astype('float')/255.0
-                roi = img_to_array(roi)
-                roi = np.expand_dims(roi,axis=0)
+while True:
+    time.sleep(5)  # Wait for 5 seconds before detecting face
+    ret, frame = cap.read()
+    gray_frame = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
+    rgb_frame = cv2.cvtColor(gray_frame, cv2.COLOR_GRAY2RGB)
 
-                prediction = classifier.predict(roi)[0] # using model to predict
-                label=emotion_labels[prediction.argmax()] # maximum for angry
-                if(label in L):
-                    L[label]+=1
-                else:
-                    L[label]=1
-                label_position = (x,y)
-                cv2.putText(frame,label,label_position,cv2.FONT_HERSHEY_SIMPLEX,1,(0,255,0),2)
-            else:
-                cv2.putText(frame,'No Faces',(30,80),cv2.FONT_HERSHEY_SIMPLEX,1,(0,255,0),2)
-        cv2.imshow('Emotion Detector',frame)
-        i+=1
-        print(i)
-        if cv2.waitKey(1) & 0xff == ord('q') | i>50:
-            break
+    # Detect faces in the frame
+    faces = face_cascade.detectMultiScale(gray_frame, scaleFactor=1.1, minNeighbors=5, minSize=(30, 30))
 
-    val = max(zip(L.values(),L.keys()))[1]
-    if (val=='Angry' or val=='Surprise'):
-        val = "Energetic"
-    elif (val=='Fear' or val=='Neutral'):
-        val = 'Calm'
+    for (x, y, w, h) in faces:
+        face_roi = rgb_frame[y:y + h, x:x + w]
 
-    print(val)
-    fp = open(r"C:\Users\User\Downloads\Emotify-master\Emotify-master\new.txt","w")
-    fp.write(val)
-    fp.close()
-    import os
-    os.system(r'python C:\Users\User\Downloads\Emotify-master\Emotify-master\songRecommender\test.py')
-    print(max(zip(L.values(),L.keys()))[1])
-    cap.release() # stop capturing frames
-    cv2.destroyAllWindows()
-    time.sleep(5)
-    return "Hello World!"
+        # Perform emotion analysis
+        result = DeepFace.analyze(face_roi, actions=['emotion'], enforce_detection=False)
+        emotion = result[0]['dominant_emotion']
 
-if __name__ == '__main__' :
-    app.debug =True
-    app.run() # 0 for default camera of personal computer - capture
+        # If the detected emotion is the same as last one, do nothing
+        if emotion == last_detected_emotion and is_song_playing():
+            continue  # Skip detection and let the song play
+
+        # Update last detected emotion
+        last_detected_emotion = emotion
+
+        # Draw rectangle and display emotion on frame
+        cv2.rectangle(frame, (x, y), (x + w, y + h), (0, 0, 255), 2)
+        cv2.putText(frame, emotion, (x, y - 10), cv2.FONT_HERSHEY_SIMPLEX, 0.9, (0, 0, 255), 2)
+
+        # Play the corresponding playlist if emotion is detected
+        if emotion in emotion_playlist:
+            device_id = get_active_device()
+            if device_id:
+                print(f"Playing playlist for emotion: {emotion}")
+                sp.start_playback(device_id=device_id, context_uri=emotion_playlist[emotion])
+
+    # Display the output
+    cv2.imshow('Real-time Emotion Detection', frame)
+
+    # Wait for song to finish before detecting again
+    while is_song_playing():
+        time.sleep(5)  # Check every 5 seconds
+
+    # Exit on pressing 'q'
+    if cv2.waitKey(1) & 0xFF == ord('q'):
+        break
+
+cap.release()
+cv2.destroyAllWindows()

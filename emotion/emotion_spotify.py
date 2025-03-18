@@ -4,9 +4,7 @@ from collections import Counter
 from deepface import DeepFace
 from spotify_auth import sp  
 
-
 face_cascade = cv2.CascadeClassifier(cv2.data.haarcascades + 'haarcascade_frontalface_default.xml')
-
 
 emotion_playlist = {
     "happy": "spotify:playlist:37i9dQZF1DXdPec7aLTmlC",
@@ -32,7 +30,7 @@ def is_song_playing():
     except:
         return False
 
-# Start capturing video
+#capture
 cap = cv2.VideoCapture(0)
 
 last_detected_emotion = None  # last detect

@@ -10,7 +10,7 @@ emotion_playlist = {
     "happy": "spotify:playlist:37i9dQZF1DXdPec7aLTmlC",
     "sad": "spotify:playlist:37i9dQZF1DX3YSRoSdA634",
     "angry": "spotify:playlist:37i9dQZF1DX0KpeLFwA3tO",
-    "neutral": "spotify:playlist:37i9dQZF1DWZqd5JICZI0u"
+    "neutral": "spotify:playlist:0Wh2emAnFLQSPKkOjwT18h"
 }
 
 
@@ -84,8 +84,8 @@ while True:
 
     cv2.imshow('Real-time Emotion Detection', frame)
 
-    # Exit on pressing 'q'
-    if cv2.waitKey(1) & 0xFF == ord('q'):
+    # Exit
+    if cv2.waitKey(1) & 0xFF == ord('s'):
         break
 
 cap.release()

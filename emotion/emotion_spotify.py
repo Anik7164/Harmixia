@@ -64,6 +64,8 @@ while True:
         if len(detected_emotions) > 10:  #last 10 sec
             detected_emotions.pop(0)
 
+    
+
     # new in 10 seconds
     if time.time() - cooldown_time > 10 and detected_emotions:
         most_common_emotion = Counter(detected_emotions).most_common(1)[0][0]  # Get the most frequent emotion

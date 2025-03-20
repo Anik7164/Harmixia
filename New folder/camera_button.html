@@ -1,0 +1,32 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Face Emotion Scanner</title>
+</head>
+<body>
+    <h1>Emotion Detection with Spotify</h1>
+    <button id="startButton">Start Scanning</button>
+    <p id="status"></p>
+
+    <script>
+        document.getElementById("startButton").addEventListener("click", function() {
+            document.getElementById("status").innerText = "Starting camera...";
+    
+            fetch("http://127.0.0.1:5000/start-scanning", {  // Explicitly call Flask
+                method: "POST",
+                headers: { "Content-Type": "application/json" }
+            })
+            .then(response => response.text())
+            .then(data => {
+                document.getElementById("status").innerText = data;
+            })
+            .catch(error => {
+                console.error("Error:", error);
+                document.getElementById("status").innerText = "Error starting scan.";
+            });
+        });
+    </script>
+</body>
+</html>

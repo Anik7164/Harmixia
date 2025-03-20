@@ -1,16 +1,29 @@
-from flask import Flask, jsonify
+import os
 import subprocess
+from flask import Flask, request
+from flask_cors import CORS
 
 app = Flask(__name__)
+CORS(app)
 
-@app.route('/run-emotion-spotify', methods=['GET'])
-def run_emotion_spotify():
+# Get the full absolute path to emotion_spotify.py
+script_path = os.path.abspath("C:/xampp/htdocs/Harmixia/emotion_spotify.py")
+
+@app.route('/start-scanning', methods=['POST'])
+def start_scanning():
     try:
-        # Run emotion_spotify.py and capture its output
-        result = subprocess.run(["python", "emotion_spotify.py"], capture_output=True, text=True)
-        return jsonify({"output": result.stdout, "error": result.stderr})
+        if not os.path.exists(script_path):  # Check if the file actually exists
+            return f"Error: File not found at {script_path}", 500
+        
+        process = subprocess.Popen(['python', script_path], stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+        stdout, stderr = process.communicate()
+
+        if stderr:
+            return f"Error: {stderr.decode('utf-8')}", 500
+        
+        return "Face scanning started!", 200
     except Exception as e:
-        return jsonify({"error": str(e)})
+        return f"Exception: {str(e)}", 500
 
 if __name__ == '__main__':
-    app.run(debug=True)
+    app.run(host='0.0.0.0', port=5000, debug=True)

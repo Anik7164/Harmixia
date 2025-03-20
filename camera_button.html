@@ -11,20 +11,17 @@
     <p id="status"></p>
 
     <script>
-        document.getElementById("startButton").addEventListener("click", function() {
-            document.getElementById("status").innerText = "Starting camera...";
+        document.getElementById("camera-button").addEventListener("click", function() {
+            
     
             fetch("http://127.0.0.1:5000/start-scanning", {  // Explicitly call Flask
                 method: "POST",
                 headers: { "Content-Type": "application/json" }
             })
-            .then(response => response.text())
-            .then(data => {
-                document.getElementById("status").innerText = data;
-            })
+           
             .catch(error => {
                 console.error("Error:", error);
-                document.getElementById("status").innerText = "Error starting scan.";
+               ;
             });
         });
     </script>

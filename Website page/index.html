@@ -1,7 +1,7 @@
 <html lang="en">
 <head>
-    <meta charset="utf-8"/>
-    <meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Harmixia</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.3/css/all.min.css" rel="stylesheet"/>
@@ -29,9 +29,32 @@
             max-height: 80%;
             overflow-y: auto;
         }
+
+        .blur-background {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            backdrop-filter: blur(10px);
+            z-index: 10;
+            display: none;
+        }
+
+        .search-results {
+            position: relative;
+            z-index: 20;
+            background-color: rgba(26, 26, 26, 0.8);
+            border-radius: 8px;
+            padding: 16px;
+            margin-top: 8px;
+        }
     </style>
 </head>
 <body class="bg-black text-white h-screen flex flex-col md:flex-row">
+<!-- Blur Background -->
+<div id="blur-background" class="blur-background"></div>
+
 <!-- Sidebar -->
 <div class="w-full md:w-1/4 bg-gray-900 p-4 flex flex-col">
     <div class="mb-4">
@@ -53,14 +76,16 @@
         </button>
     </div>
 </div>
+
 <!-- Main Content -->
 <div class="flex-1 p-4">
     <!-- Header -->
     <div class="flex justify-between items-center mb-4">
         <div class="flex items-center space-x-2">
-            <a href="../emotion/emotion.py">
+            <button id="camera-button" class="text-white text-xl focus:outline-none">
+                <p id="status"></p>
                 <i class="fas fa-camera"></i>
-            </a>
+            </button>
             <input id="search-input" class="bg-gray-800 text-white p-2 rounded w-1/2" placeholder="Search..." type="text"/>
             <button id="search-button" class="text-white text-xl focus:outline-none">
                 <i class="fas fa-search text-xl"></i>
@@ -71,10 +96,12 @@
             <i class="fas fa-user-circle text-2xl"></i>
         </div>
     </div>
+
     <!-- Search Results -->
-    <div id="results" class="mb-4"></div>
+    <div id="results" class="search-results"></div>
+
     <!-- Rising Artists -->
-    <div class="mb-4">
+    <div id="rising-artists" class="mb-4">
         <h2 class="text-xl font-bold">Rising Artists</h2>
         <div class="flex mt-2 space-x-4 overflow-x-auto">
             <div class="text-center">
@@ -97,8 +124,9 @@
             </div>
         </div>
     </div>
+
     <!-- Top Songs -->
-    <div>
+    <div id="top-songs">
         <h2 class="text-xl font-bold">Top Songs</h2>
         <div class="flex mt-2 space-x-4 overflow-x-auto">
             <div class="text-center">
@@ -125,6 +153,7 @@
         </div>
     </div>
 </div>
+
 <!-- Now Playing -->
 <div class="w-full md:w-1/4 bg-gray-900 p-4">
     <h2 class="text-xl font-bold mb-4">Now Playing</h2>
@@ -147,11 +176,52 @@
 </div>
 
 <script>
+    document.getElementById("camera-button").addEventListener("click", function() {
+        
+
+        fetch("http://127.0.0.1:5000/start-scanning", {  // Explicitly call Flask
+            method: "POST",
+            headers: { "Content-Type": "application/json" }
+        })
+       
+        .catch(error => {
+            console.error("Error:", error);
+           ;
+        });
+    });
+</script>
+<!-- Spotify Web Playback SDK -->
+<script src="https://sdk.scdn.co/spotify-player.js"></script>
+<script>
     const clientId = 'ee31a7f71f474295a798c8180dd03be3'; // Replace with your Client ID
     const clientSecret = 'd8f98f46ae934b0fa306fbed2f70fb4c'; // Replace with your Client Secret
 
     const tokenEndpoint = 'https://accounts.spotify.com/api/token';
     const apiEndpoint = 'https://api.spotify.com/v1';
+
+    let accessToken = '';
+    let deviceId = '';
+    let player;
+
+    // Initialize Spotify Web Playback SDK
+    window.onSpotifyWebPlaybackSDKReady = () => {
+        player = new Spotify.Player({
+            name: 'Harmixia Player',
+            getOAuthToken: cb => { cb(accessToken); },
+            volume: 0.5
+        });
+
+        player.addListener('ready', ({ device_id }) => {
+            console.log('Ready with Device ID', device_id);
+            deviceId = device_id;
+        });
+
+        player.addListener('not_ready', ({ device_id }) => {
+            console.log('Device ID has gone offline', device_id);
+        });
+
+        player.connect();
+    };
 
     async function getAccessToken() {
         const response = await fetch(tokenEndpoint, {
@@ -166,7 +236,8 @@
         });
 
         const data = await response.json();
-        return data.access_token;
+        accessToken = data.access_token;
+        return accessToken;
     }
 
     async function searchSpotify(query) {
@@ -181,18 +252,48 @@
         return data;
     }
 
+    async function playTrack(trackUri) {
+        const response = await fetch(`${apiEndpoint}/me/player/play?device_id=${deviceId}`, {
+            method: 'PUT',
+            headers: {
+                'Authorization': `Bearer ${accessToken}`,
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({ uris: [trackUri] }),
+        });
+
+        if (response.status === 204) {
+            console.log('Playback started');
+        } else {
+            console.error('Failed to start playback');
+        }
+    }
+
     function displayResults(results) {
         const resultsContainer = document.getElementById('results');
+        const blurBackground = document.getElementById('blur-background');
+        const risingArtists = document.getElementById('rising-artists');
+        const topSongs = document.getElementById('top-songs');
+
         resultsContainer.innerHTML = '';
 
         if (results.tracks.items.length === 0) {
             resultsContainer.innerHTML = '<p>No results found.</p>';
+            blurBackground.style.display = 'none';
+            risingArtists.style.display = 'block';
+            topSongs.style.display = 'block';
             return;
         }
 
+        // Show blur background and hide other sections
+        blurBackground.style.display = 'block';
+        risingArtists.style.display = 'none';
+        topSongs.style.display = 'none';
+
         results.tracks.items.forEach(track => {
             const trackElement = document.createElement('div');
-            trackElement.className = 'track flex items-center space-x-4 mb-4';
+            trackElement.className = 'track flex items-center space-x-4 mb-4 cursor-pointer';
+            trackElement.onclick = () => playTrack(track.uri);
 
             trackElement.innerHTML = `
                 <img src="${track.album.images[0].url}" alt="${track.name}" class="w-16 h-16">
@@ -231,6 +332,7 @@
     function closeModal() {
         document.getElementById("loginModal").style.display = "none";
     }
+
     function togglePlayPause() {
         const playPauseIcon = document.getElementById("playPauseIcon");
         if (playPauseIcon.classList.contains("fa-play")) {

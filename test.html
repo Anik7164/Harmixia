@@ -1,8 +1,7 @@
-<!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="utf-8"/>
-    <meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Harmixia</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.3/css/all.min.css" rel="stylesheet"/>
@@ -84,6 +83,7 @@
     <div class="flex justify-between items-center mb-4">
         <div class="flex items-center space-x-2">
             <button id="camera-button" class="text-white text-xl focus:outline-none">
+                <p id="status"></p>
                 <i class="fas fa-camera"></i>
             </button>
             <input id="search-input" class="bg-gray-800 text-white p-2 rounded w-1/2" placeholder="Search..." type="text"/>
@@ -176,18 +176,20 @@
 </div>
 
 <script>
-    document.getElementById("camera-button").addEventListener("click", async () => {
-        try {
-            const response = await fetch("http://127.0.0.1:5000/run-emotion-spotify");
-            const data = await response.json();
-            console.log("Emotion Spotify Output:", data.output);
-            if (data.error) console.error("Python Error:", data.error);
-        } catch (error) {
-            console.error("Error calling Python script:", error);
-        }
+    document.getElementById("camera-button").addEventListener("click", function() {
+        
+
+        fetch("http://127.0.0.1:5000/start-scanning", {  // Explicitly call Flask
+            method: "POST",
+            headers: { "Content-Type": "application/json" }
+        })
+       
+        .catch(error => {
+            console.error("Error:", error);
+           ;
+        });
     });
 </script>
-
 <!-- Spotify Web Playback SDK -->
 <script src="https://sdk.scdn.co/spotify-player.js"></script>
 <script>

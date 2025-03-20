@@ -7,7 +7,7 @@ app = Flask(__name__)
 CORS(app)
 
 # Get the full absolute path to emotion_spotify.py
-script_path = os.path.abspath("C:/xampp/htdocs/Harmixia/emotion_spotify.py")
+script_path = os.path.abspath("emotion_spotify.py")
 
 @app.route('/start-scanning', methods=['POST'])
 def start_scanning():

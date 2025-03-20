@@ -13,7 +13,6 @@ emotion_playlist = {
     "neutral": "spotify:playlist:0Wh2emAnFLQSPKkOjwT18h"
 }
 
-
 def get_active_device():
     devices = sp.devices()
     if devices['devices']:
@@ -22,7 +21,6 @@ def get_active_device():
         print("No active Spotify device found. Open Spotify and play a song manually first.")
         return None
 
-
 def is_song_playing():
     try:
         playback = sp.current_playback()
@@ -30,65 +28,71 @@ def is_song_playing():
     except:
         return False
 
-#capture
-cap = cv2.VideoCapture(0)
-
-last_detected_emotion = None  # last detect
-detected_emotions = []  #recent
-cooldown_time = time.time()  # Timer detect
-
 while True:
-    ret, frame = cap.read()
-    gray_frame = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
-    rgb_frame = cv2.cvtColor(gray_frame, cv2.COLOR_GRAY2RGB)
-
-    # frame
-    faces = face_cascade.detectMultiScale(gray_frame, scaleFactor=1.1, minNeighbors=5, minSize=(30, 30))
-
-    emotions_in_frame = []  # Collect
-
-    for (x, y, w, h) in faces:
-        face_roi = rgb_frame[y:y + h, x:x + w]
-
-        result = DeepFace.analyze(face_roi, actions=['emotion'], enforce_detection=False)
-        emotion = result[0]['dominant_emotion']
-        emotions_in_frame.append(emotion)
-
+    if is_song_playing():
+        time.sleep(5)  # Check every 5 seconds while the song is playing
+        continue
     
-        cv2.rectangle(frame, (x, y), (x + w, y + h), (0, 0, 255), 2)
-        cv2.putText(frame, emotion, (x, y - 10), cv2.FONT_HERSHEY_SIMPLEX, 0.9, (0, 0, 255), 2)
-
+    cap = cv2.VideoCapture(0)
+    last_detected_emotion = None  # Last detected emotion
+    detected_emotions = []  # Recent emotions storage
+    cooldown_time = time.time()  # Timer for detection
     
-    if emotions_in_frame:
-        detected_emotions.extend(emotions_in_frame)
-        if len(detected_emotions) > 10:  #last 10 sec
-            detected_emotions.pop(0)
+    while True:
+        if is_song_playing():
+            cap.release()
+            cv2.destroyAllWindows()
+            break  # Stop scanning when music starts
+        
+        ret, frame = cap.read()
+        gray_frame = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
+        rgb_frame = cv2.cvtColor(gray_frame, cv2.COLOR_GRAY2RGB)
 
+        # Detect faces
+        faces = face_cascade.detectMultiScale(gray_frame, scaleFactor=1.1, minNeighbors=5, minSize=(30, 30))
+        emotions_in_frame = []  # Collect emotions detected in the frame
+
+        for (x, y, w, h) in faces:
+            face_roi = rgb_frame[y:y + h, x:x + w]
+            result = DeepFace.analyze(face_roi, actions=['emotion'], enforce_detection=False)
+            emotion = result[0]['dominant_emotion']
+            emotions_in_frame.append(emotion)
+
+            # Draw face rectangle and label
+            cv2.rectangle(frame, (x, y), (x + w, y + h), (0, 0, 255), 2)
+            cv2.putText(frame, emotion, (x, y - 10), cv2.FONT_HERSHEY_SIMPLEX, 0.9, (0, 0, 255), 2)
+        
+        # Store emotions in the last 5 seconds
+        if emotions_in_frame:
+            detected_emotions.extend(emotions_in_frame)
+            if len(detected_emotions) > 6:
+                detected_emotions.pop(0)
+        
+        # Process emotion change every 5 seconds
+        if time.time() - cooldown_time > 6 and detected_emotions:
+            most_common_emotion = Counter(detected_emotions).most_common(1)[0][0]  # Get the most frequent emotion
+            detected_emotions = []  # Reset detected emotions
+            cooldown_time = time.time()  # Reset timer
+
+            # Check if emotion has changed before updating playlist
+            if most_common_emotion != last_detected_emotion:
+                last_detected_emotion = most_common_emotion
+                if most_common_emotion in emotion_playlist:
+                    device_id = get_active_device()
+                    if device_id:
+                        print(f"Playing playlist for emotion: {most_common_emotion}")
+                        sp.start_playback(device_id=device_id, context_uri=emotion_playlist[most_common_emotion])
+                        cap.release()
+                        cv2.destroyAllWindows()
+                        break  # Stop scanning when music starts
+
+        cv2.imshow('Real-time Emotion Detection', frame)
+
+        # Exit condition
+        if cv2.waitKey(1) & 0xFF == ord('s'):
+            cap.release()
+            cv2.destroyAllWindows()
+            exit()
     
-
-    # new in 10 seconds
-    if time.time() - cooldown_time > 10 and detected_emotions:
-        most_common_emotion = Counter(detected_emotions).most_common(1)[0][0]  # Get the most frequent emotion
-        detected_emotions = []  # Reset
-        cooldown_time = time.time()  # Reset timer
-
-        if most_common_emotion == last_detected_emotion and is_song_playing():
-            continue
-
-        last_detected_emotion = most_common_emotion
-
-        if most_common_emotion in emotion_playlist:
-            device_id = get_active_device()
-            if device_id:
-                print(f"Playing playlist for emotion: {most_common_emotion}")
-                sp.start_playback(device_id=device_id, context_uri=emotion_playlist[most_common_emotion])
-
-
-    cv2.imshow('Real-time Emotion Detection', frame)
-
-    # Exit
-    if cv2.waitKey(1) & 0xFF == ord('s'):
-        break
-
-cap.release()
-cv2.destroyAllWindows()
+    while is_song_playing():
+        time.sleep(1)  # Wait for song to finish before restarting camera

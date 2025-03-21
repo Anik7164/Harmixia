@@ -90,6 +90,60 @@ def previous_song():
         return jsonify({"message": "Went back to previous track"}), 200
     except Exception as e:
         return jsonify({"error": str(e)}), 500
+    
+@app.route('/current-playlist', methods=['GET'])
+def get_current_playlist():
+    try:
+        # Get the current playing track
+        current_track = sp.current_playback()
+        if not current_track or not current_track.get("context"):
+            return jsonify({"error": "No active playlist found"}), 400
+
+        # Get playlist URI
+        context = current_track["context"]
+        if not context or "playlist" not in context["uri"]:
+            return jsonify({"error": "Currently playing is not from a playlist"}), 400
+
+        playlist_uri = context["uri"]
+        playlist_id = playlist_uri.split(":")[-1]
+
+        # Fetch playlist details
+        playlist = sp.playlist_tracks(playlist_id)
+
+        # Extract song details
+        songs = []
+        for item in playlist["items"]:
+            track = item["track"]
+            songs.append({
+                "name": track["name"],
+                "artist": track["artists"][0]["name"],
+                "uri": track["uri"]
+            })
+
+        return jsonify({"playlist": songs}), 200
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
+
+@app.route('/play-song', methods=['POST'])
+def play_selected_song():
+    try:
+        data = request.get_json()
+        song_uri = data.get("uri")
+
+        if not song_uri:
+            return jsonify({"error": "No song URI provided"}), 400
+
+        device_id = get_active_device()
+        if not device_id:
+            return jsonify({"error": "No active device found. Open Spotify on a device."}), 400
+
+        sp.start_playback(device_id=device_id, uris=[song_uri])
+        return jsonify({"message": "Song playing"}), 200
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
+
 
 if __name__ == '__main__':
     app.run(host='0.0.0.0', port=5000, debug=True)

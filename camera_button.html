@@ -12,14 +12,46 @@
     <button id="pauseButton">Pause Music</button>
     <button id="nextButton">Next Song</button>
     <button id="prevButton">Previous Song</button>
+    <button id="fetchPlaylistButton">Show Playlist</button>
+
+    <ul id="playlist"></ul>
+
     <p id="status"></p>
 
     <script>
-        function sendRequest(url) {
-            fetch(url, { method: "POST" })
+        function sendRequest(url, method = "POST", body = null) {
+            fetch(url, { 
+                method: method,
+                headers: { "Content-Type": "application/json" },
+                body: body ? JSON.stringify(body) : null
+            })
             .then(response => response.json())
-            .then(data => console.log(data))
+            .then(data => {
+                console.log(data);
+                if (data.playlist) {
+                    showPlaylist(data.playlist);
+                }
+            })
             .catch(error => console.error("Error:", error));
+        }
+
+        function showPlaylist(songs) {
+    const playlistEl = document.getElementById("playlist");
+    playlistEl.innerHTML = "";
+    
+    songs.forEach(song => {
+        const li = document.createElement("li");
+        li.textContent = `${song.name} - ${song.artist}`;
+        li.style.cursor = "pointer";  // Makes it clear that the song is clickable
+        li.onclick = () => playSong(song.uri);  // Calls playSong with song URI
+        
+        playlistEl.appendChild(li);
+    });
+}
+
+
+        function playSong(uri) {
+            sendRequest("http://127.0.0.1:5000/play-song", "POST", { uri: uri });
         }
 
         document.getElementById("startButton").addEventListener("click", function() {
@@ -40,6 +72,10 @@
 
         document.getElementById("prevButton").addEventListener("click", function() {
             sendRequest("http://127.0.0.1:5000/previous");
+        });
+
+        document.getElementById("fetchPlaylistButton").addEventListener("click", function() {
+            sendRequest("http://127.0.0.1:5000/current-playlist", "GET");
         });
     </script>
 </body>

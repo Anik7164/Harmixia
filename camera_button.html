@@ -8,21 +8,28 @@
 <body>
     <h1>Emotion Detection with Spotify</h1>
     <button id="startButton">Start Scanning</button>
+    <button id="playButton">Play Music</button>
+    <button id="pauseButton">Pause Music</button>
     <p id="status"></p>
 
     <script>
-        document.getElementById("camera-button").addEventListener("click", function() {
-            
-    
-            fetch("http://127.0.0.1:5000/start-scanning", {  // Explicitly call Flask
-                method: "POST",
-                headers: { "Content-Type": "application/json" }
-            })
-           
-            .catch(error => {
-                console.error("Error:", error);
-               ;
-            });
+        function sendRequest(url) {
+            fetch(url, { method: "POST" })
+            .then(response => response.json())
+            .then(data => console.log(data))
+            .catch(error => console.error("Error:", error));
+        }
+
+        document.getElementById("startButton").addEventListener("click", function() {
+            sendRequest("http://127.0.0.1:5000/start-scanning");
+        });
+
+        document.getElementById("playButton").addEventListener("click", function() {
+            sendRequest("http://127.0.0.1:5000/play");
+        });
+
+        document.getElementById("pauseButton").addEventListener("click", function() {
+            sendRequest("http://127.0.0.1:5000/pause");
         });
     </script>
 </body>

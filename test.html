@@ -174,6 +174,7 @@
         <a href="..\Two Factor Authentication using PHP\registration.php" class="w-full bg-blue-600 p-2 rounded mb-4 text-center block">Sign Up</a>
     </div>
 </div>
+<div id="now-playing" class="flex items-center space-x-4 p-4 bg-gray-900"></div>
 
 <script>
     document.getElementById("camera-button").addEventListener("click", function() {
@@ -189,6 +190,7 @@
            ;
         });
     });
+    
 </script>
 <!-- Spotify Web Playback SDK -->
 <script src="https://sdk.scdn.co/spotify-player.js"></script>
@@ -324,6 +326,35 @@
             }
         }
     });
+
+    async function fetchCurrentTrack() {
+    try {
+        const response = await fetch("http://127.0.0.1:5000/current-track");
+        const data = await response.json();
+
+        if (data.error) {
+            document.getElementById("now-playing").innerHTML = "No song is playing";
+            return;
+        }
+
+        document.getElementById("now-playing").innerHTML = `
+            <img src="${data.album_cover}" alt="Album Cover" class="w-16 h-16 rounded">
+            <div>
+                <p class="text-lg">${data.name}</p>
+                <p class="text-sm text-gray-400">${data.artist}</p>
+            </div>
+        `;
+    } catch (error) {
+        console.error("Error fetching current track:", error);
+    }
+}
+
+// Refresh every 5 seconds
+setInterval(fetchCurrentTrack, 5000);
+
+// Fetch on page load
+fetchCurrentTrack();
+
 
     function openModal() {
         document.getElementById("loginModal").style.display = "block";

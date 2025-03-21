@@ -143,6 +143,37 @@ def play_selected_song():
     except Exception as e:
         return jsonify({"error": str(e)}), 500
 
+@app.route('/volume-up', methods=['POST'])
+def volume_up():
+    try:
+        device_id = get_active_device()
+        if not device_id:
+            return jsonify({"error": "No active device found. Open Spotify on a device."}), 400
+
+        current_volume = sp.current_playback().get("device", {}).get("volume_percent", 50)
+        new_volume = min(current_volume + 10, 100)  # Increase volume by 10, max 100
+
+        sp.volume(new_volume, device_id=device_id)
+        return jsonify({"message": f"Volume increased to {new_volume}%"}), 200
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
+
+@app.route('/volume-down', methods=['POST'])
+def volume_down():
+    try:
+        device_id = get_active_device()
+        if not device_id:
+            return jsonify({"error": "No active device found. Open Spotify on a device."}), 400
+
+        current_volume = sp.current_playback().get("device", {}).get("volume_percent", 50)
+        new_volume = max(current_volume - 10, 0)  # Decrease volume by 10, min 0
+
+        sp.volume(new_volume, device_id=device_id)
+        return jsonify({"message": f"Volume decreased to {new_volume}%"}), 200
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
 
 
 if __name__ == '__main__':

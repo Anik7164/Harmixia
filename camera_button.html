@@ -13,12 +13,23 @@
     <button id="nextButton">Next Song</button>
     <button id="prevButton">Previous Song</button>
     <button id="fetchPlaylistButton">Show Playlist</button>
+    <button id="volumeUpButton">Increase Volume</button>
+    <button id="volumeDownButton">Decrease Volume</button>
+
 
     <ul id="playlist"></ul>
 
     <p id="status"></p>
 
     <script>
+        
+        document.getElementById("volumeUpButton").addEventListener("click", function() {
+    sendRequest("http://127.0.0.1:5000/volume-up");
+});
+
+document.getElementById("volumeDownButton").addEventListener("click", function() {
+    sendRequest("http://127.0.0.1:5000/volume-down");
+});
         function sendRequest(url, method = "POST", body = null) {
             fetch(url, { 
                 method: method,

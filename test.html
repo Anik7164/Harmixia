@@ -57,14 +57,18 @@
 
 <!-- Sidebar -->
 <div class="w-full md:w-1/4 bg-gray-900 p-4 flex flex-col">
-    <div class="mb-4">
-        <h2 class="text-lg font-bold">Your Library</h2>
-        <ul class="mt-2">
-            <li class="mt-2">New Playlist 1</li>
-            <li class="mt-2">New Playlist 2</li>
-        </ul>
-    </div>
     
+    <div class="mt-auto p-4 bg-gray-800 flex items-center justify-around" bis_skin_checked="1">
+        <img id="albumArt" src="" alt="Album Art" style="width: 350px;height: 480px;">
+        <ul id="playlist"></ul>
+        <p id="status"></p>
+    </div>
+    <div class="mt-auto p-4 bg-gray-800 flex items-center justify-around">
+<p class="text-center,text-lg" id="currentSong"> </p>
+
+        <p id="status"></p>
+        
+    </div>
     <div class="mt-auto p-4 bg-gray-800 flex items-center justify-around">
         <button class="text-white text-2xl focus:outline-none" id="prevButton">
             <p id="status"></p>
@@ -195,7 +199,39 @@
         <a href="..\Two Factor Authentication using PHP\registration.php" class="w-full bg-blue-600 p-2 rounded mb-4 text-center block">Sign Up</a>
     </div>
 </div>
+<script>function fetchCurrentSong() {
+    fetch("http://127.0.0.1:5000/current-song")
+    .then(response => {
+        if (!response.ok) {
+            throw new Error("Failed to fetch current song.");
+        }
+        return response.json();
+    })
+    .then(data => {
+        if (data.error) {
+            document.getElementById("currentSong").textContent = "Not playing";
+            document.getElementById("albumArt").src = "";
+        } else {
+            document.getElementById("currentSong").textContent = `${data.name} - ${data.artist}`;
+            document.getElementById("albumArt").src = data.image;
+        }
+    })
+    .catch(error => {
+        console.error("Error fetching song:", error);
+        document.getElementById("currentSong").textContent = "Error fetching song";
+    });
+}
+
+// Fetch song every second (1000ms)
+setInterval(fetchCurrentSong, 1000);
+
+// Fetch song on page load
+fetchCurrentSong();
+
+</script>
 <script>
+
+    
     function sendRequest(url) {
         fetch(url, { method: "POST" })
         .then(response => response.json())

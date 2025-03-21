@@ -59,7 +59,7 @@ function fetchCurrentSong() {
 document.getElementById("refreshSongButton").addEventListener("click", fetchCurrentSong);
 
 // Auto-refresh every 10 seconds
-setInterval(fetchCurrentSong, 10000);
+setInterval(fetchCurrentSong, 1000);
 
 // Fetch song on page load
 fetchCurrentSong();

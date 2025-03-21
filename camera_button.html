@@ -10,6 +10,8 @@
     <button id="startButton">Start Scanning</button>
     <button id="playButton">Play Music</button>
     <button id="pauseButton">Pause Music</button>
+    <button id="nextButton">Next Song</button>
+    <button id="prevButton">Previous Song</button>
     <p id="status"></p>
 
     <script>
@@ -30,6 +32,14 @@
 
         document.getElementById("pauseButton").addEventListener("click", function() {
             sendRequest("http://127.0.0.1:5000/pause");
+        });
+
+        document.getElementById("nextButton").addEventListener("click", function() {
+            sendRequest("http://127.0.0.1:5000/next");
+        });
+
+        document.getElementById("prevButton").addEventListener("click", function() {
+            sendRequest("http://127.0.0.1:5000/previous");
         });
     </script>
 </body>

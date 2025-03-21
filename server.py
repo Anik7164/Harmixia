@@ -46,6 +46,33 @@ def pause_song():
         return jsonify({"message": "Playback paused"}), 200
     except Exception as e:
         return jsonify({"error": str(e)}), 500
+    
+    
+
+@app.route('/next', methods=['POST'])
+def next_song():
+    try:
+        device_id = get_active_device()
+        if not device_id:
+            return jsonify({"error": "No active device found. Open Spotify on a device."}), 400
+
+        sp.next_track(device_id=device_id)
+        return jsonify({"message": "Skipped to next track"}), 200
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
+@app.route('/previous', methods=['POST'])
+def previous_song():
+    try:
+        device_id = get_active_device()
+        if not device_id:
+            return jsonify({"error": "No active device found. Open Spotify on a device."}), 400
+
+        sp.previous_track(device_id=device_id)
+        return jsonify({"message": "Went back to previous track"}), 200
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
 
 if __name__ == '__main__':
     app.run(host='0.0.0.0', port=5000, debug=True)

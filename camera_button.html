@@ -15,6 +15,8 @@
     <button id="fetchPlaylistButton">Show Playlist</button>
     <button id="volumeUpButton">Increase Volume</button>
     <button id="volumeDownButton">Decrease Volume</button>
+    <p><strong>Now Playing:</strong> <span id="currentSong">Not playing</span></p>
+<button id="refreshSongButton">Refresh Now Playing</button>
 
 
     <ul id="playlist"></ul>
@@ -30,6 +32,29 @@
 document.getElementById("volumeDownButton").addEventListener("click", function() {
     sendRequest("http://127.0.0.1:5000/volume-down");
 });
+
+function fetchCurrentSong() {
+    fetch("http://127.0.0.1:5000/current-song", { method: "GET" })
+    .then(response => response.json())
+    .then(data => {
+        if (data.error) {
+            document.getElementById("currentSong").textContent = "Not playing";
+        } else {
+            document.getElementById("currentSong").textContent = `${data.name} - ${data.artist}`;
+        }
+    })
+    .catch(error => console.error("Error:", error));
+}
+
+// Refresh button
+document.getElementById("refreshSongButton").addEventListener("click", fetchCurrentSong);
+
+// Auto-refresh every 10 seconds
+setInterval(fetchCurrentSong, 10000);
+
+// Fetch song on page load
+fetchCurrentSong();
+
         function sendRequest(url, method = "POST", body = null) {
             fetch(url, { 
                 method: method,

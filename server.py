@@ -173,6 +173,25 @@ def volume_down():
         return jsonify({"message": f"Volume decreased to {new_volume}%"}), 200
     except Exception as e:
         return jsonify({"error": str(e)}), 500
+    
+@app.route('/current-song', methods=['GET'])
+def current_song():
+    try:
+        current_track = sp.current_playback()
+        if not current_track or not current_track.get("item"):
+            return jsonify({"error": "No song currently playing"}), 400
+
+        track = current_track["item"]
+        song_data = {
+            "name": track["name"],
+            "artist": track["artists"][0]["name"],
+            "album": track["album"]["name"],
+            "image": track["album"]["images"][0]["url"] if track["album"]["images"] else ""
+        }
+        return jsonify(song_data), 200
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
 
 
 

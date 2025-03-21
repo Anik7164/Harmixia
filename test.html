@@ -65,16 +65,20 @@
         </ul>
     </div>
     <div class="mt-auto p-4 bg-gray-800 flex items-center justify-around">
-        <button class="text-white text-2xl focus:outline-none" id="previousButton">
+        <button class="text-white text-2xl focus:outline-none" id="prevButton">
+            <p id="status"></p>
             <i class="fas fa-backward"></i>
         </button>
         <button class="text-white text-2xl focus:outline-none" id="playButton">
+            <p id="status"></p>
             <i class="fas fa-play"></i>
         </button>
         <button class="text-white text-2xl focus:outline-none" id="pauseButton">
+            <p id="status"></p>
             <i class="fas fa-pause"></i>
         </button>
         <button class="text-white text-2xl focus:outline-none" id="nextButton">
+            <p id="status"></p>
             <i class="fas fa-forward"></i>
         </button>
     </div>
@@ -185,9 +189,6 @@
         .catch(error => console.error("Error:", error));
     }
 
-    document.getElementById("startButton").addEventListener("click", function() {
-        sendRequest("http://127.0.0.1:5000/start-scanning");
-    });
 
     document.getElementById("playButton").addEventListener("click", function() {
         sendRequest("http://127.0.0.1:5000/play");

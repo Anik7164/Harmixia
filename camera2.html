@@ -15,45 +15,14 @@
     <button id="fetchPlaylistButton">Show Playlist</button>
     <button id="volumeUpButton">Increase Volume</button>
     <button id="volumeDownButton">Decrease Volume</button>
-    <p><strong>Now Playing:</strong> <span id="currentSong">Not playing</span></p>
-<button id="refreshSongButton">Refresh Now Playing</button>
-
 
     <ul id="playlist"></ul>
 
     <p id="status"></p>
 
     <script>
-        
-        document.getElementById("volumeUpButton").addEventListener("click", function() {
-    sendRequest("http://127.0.0.1:5000/volume-up");
-});
-
-document.getElementById("volumeDownButton").addEventListener("click", function() {
-    sendRequest("http://127.0.0.1:5000/volume-down");
-});
-
-function fetchCurrentSong() {
-    fetch("http://127.0.0.1:5000/current-song", { method: "GET" })
-    .then(response => response.json())
-    .then(data => {
-        if (data.error) {
-            document.getElementById("currentSong").textContent = "Not playing";
-        } else {
-            document.getElementById("currentSong").textContent = `${data.name} - ${data.artist}`;
-        }
-    })
-    .catch(error => console.error("Error:", error));
-}
-
-// Refresh button
-document.getElementById("refreshSongButton").addEventListener("click", fetchCurrentSong);
-
-// Auto-refresh every 10 seconds
-setInterval(fetchCurrentSong, 10000);
-
-// Fetch song on page load
-fetchCurrentSong();
+        let currentPlaylist = [];
+        let currentIndex = -1;
 
         function sendRequest(url, method = "POST", body = null) {
             fetch(url, { 
@@ -65,6 +34,7 @@ fetchCurrentSong();
             .then(data => {
                 console.log(data);
                 if (data.playlist) {
+                    currentPlaylist = data.playlist;
                     showPlaylist(data.playlist);
                 }
             })
@@ -72,22 +42,24 @@ fetchCurrentSong();
         }
 
         function showPlaylist(songs) {
-    const playlistEl = document.getElementById("playlist");
-    playlistEl.innerHTML = "";
-    
-    songs.forEach(song => {
-        const li = document.createElement("li");
-        li.textContent = `${song.name} - ${song.artist}`;
-        li.style.cursor = "pointer";  // Makes it clear that the song is clickable
-        li.onclick = () => playSong(song.uri);  // Calls playSong with song URI
-        
-        playlistEl.appendChild(li);
-    });
-}
+            const playlistEl = document.getElementById("playlist");
+            playlistEl.innerHTML = "";
+            
+            songs.forEach((song, index) => {
+                const li = document.createElement("li");
+                li.textContent = `${song.name} - ${song.artist}`;
+                li.style.cursor = "pointer";
+                li.onclick = () => playSong(index);
+                
+                playlistEl.appendChild(li);
+            });
+        }
 
-
-        function playSong(uri) {
-            sendRequest("http://127.0.0.1:5000/play-song", "POST", { uri: uri });
+        function playSong(index) {
+            if (index >= 0 && index < currentPlaylist.length) {
+                currentIndex = index;
+                sendRequest("http://127.0.0.1:5000/play-song", "POST", { uri: currentPlaylist[index].uri });
+            }
         }
 
         document.getElementById("startButton").addEventListener("click", function() {
@@ -103,30 +75,28 @@ fetchCurrentSong();
         });
 
         document.getElementById("nextButton").addEventListener("click", function() {
-            sendRequest("http://127.0.0.1:5000/next");
+            if (currentIndex + 1 < currentPlaylist.length) {
+                playSong(currentIndex + 1);
+            }
         });
 
         document.getElementById("prevButton").addEventListener("click", function() {
-            sendRequest("http://127.0.0.1:5000/previous");
+            if (currentIndex - 1 >= 0) {
+                playSong(currentIndex - 1);
+            }
         });
 
         document.getElementById("fetchPlaylistButton").addEventListener("click", function() {
             sendRequest("http://127.0.0.1:5000/current-playlist", "GET");
         });
+
+        document.getElementById("volumeUpButton").addEventListener("click", function() {
+            sendRequest("http://127.0.0.1:5000/volume-up");
+        });
+
+        document.getElementById("volumeDownButton").addEventListener("click", function() {
+            sendRequest("http://127.0.0.1:5000/volume-down");
+        });
     </script>
 </body>
 </html>
-
-<div class="flex items-center justify-around w-full mt-4">
-    <button class="text-white text-2xl focus:outline-none" id="volumeDownButton">
-       <p id="status"></p>
-     <i class="fas fa-volume-down">
-     </i>
-    </button>
-    <button class="text-white text-2xl focus:outline-none" id="volumeUpButton">
-       <p id="status"></p>
-   
-     <i class="fas fa-volume-up">
-     </i>
-    </button>
-   </div>

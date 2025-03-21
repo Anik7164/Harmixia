@@ -1,3 +1,5 @@
+import os
+import subprocess
 from flask import Flask, request, jsonify
 from flask_cors import CORS
 import spotipy
@@ -23,6 +25,24 @@ def get_active_device():
         return None
     return devices['devices'][0]['id']
 
+@app.route('/start-scanning', methods=['POST'])
+def start_scanning():
+    try:
+        script_path = os.path.abspath("emotion_spotify.py")
+
+        if not os.path.exists(script_path):
+            return jsonify({"error": f"File not found at {script_path}"}), 500
+
+        process = subprocess.Popen(['python', script_path], stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+        stdout, stderr = process.communicate()
+
+        if stderr:
+            return jsonify({"error": stderr.decode('utf-8')}), 500
+
+        return jsonify({"message": "Face scanning started!"}), 200
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
 @app.route('/play', methods=['POST'])
 def play_song():
     try:
@@ -46,8 +66,6 @@ def pause_song():
         return jsonify({"message": "Playback paused"}), 200
     except Exception as e:
         return jsonify({"error": str(e)}), 500
-    
-    
 
 @app.route('/next', methods=['POST'])
 def next_song():
@@ -72,7 +90,6 @@ def previous_song():
         return jsonify({"message": "Went back to previous track"}), 200
     except Exception as e:
         return jsonify({"error": str(e)}), 500
-
 
 if __name__ == '__main__':
     app.run(host='0.0.0.0', port=5000, debug=True)

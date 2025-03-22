@@ -60,7 +60,7 @@
     
     <div class="mt-auto p-4 bg-gray-800 flex items-center justify-around" bis_skin_checked="1">
         <img id="albumArt" src="" alt="Album Art" style="width: 350px;height: 480px;">
-        <ul id="playlist"></ul>
+        
         <p id="status"></p>
     </div>
     <div class="mt-auto p-4 bg-gray-800 flex items-center justify-around">
@@ -182,13 +182,10 @@
 <!-- Now Playing -->
 <div class="w-full md:w-1/4 bg-gray-900 p-4">
     <h2 class="text-xl font-bold mb-4">Now Playing</h2>
-    <img alt="Album cover of Escalate" class="w-full h-auto" height="300"
-         src="https://storage.googleapis.com/a1aa/image/JAvBtAN75IxM0qwF5uO6BglyMVGJLIRSbekdoplIoeg.jpg" width="300"/>
-    <div class="mt-4">
-        <p class="text-lg">Mine</p>
-        <p class="text-sm text-gray-400">Aimer</p>
+    <button id="fetchPlaylistButton">Show Playlist</button>
+    <ul id="playlist"></ul>
+    <p id="status"></p>
     </div>
-</div>
 
 <!-- The Modal -->
 <div id="loginModal" class="modal">
@@ -199,7 +196,9 @@
         <a href="..\Two Factor Authentication using PHP\registration.php" class="w-full bg-blue-600 p-2 rounded mb-4 text-center block">Sign Up</a>
     </div>
 </div>
-<script>function fetchCurrentSong() {
+
+<script>
+function fetchCurrentSong() {
     fetch("http://127.0.0.1:5000/current-song")
     .then(response => {
         if (!response.ok) {
@@ -228,11 +227,41 @@ setInterval(fetchCurrentSong, 1000);
 // Fetch song on page load
 fetchCurrentSong();
 
-</script>
-<script>
+function sendRequest(url, method = "POST", body = null) {
+            fetch(url, { 
+                method: method,
+                headers: { "Content-Type": "application/json" },
+                body: body ? JSON.stringify(body) : null
+            })
+            .then(response => response.json())
+            .then(data => {
+                console.log(data);
+                if (data.playlist) {
+                    showPlaylist(data.playlist);
+                }
+            })
+            .catch(error => console.error("Error:", error));
+        }
 
+        function showPlaylist(songs) {
+    const playlistEl = document.getElementById("playlist");
+    playlistEl.innerHTML = "";
     
-    function sendRequest(url) {
+    songs.forEach(song => {
+        const li = document.createElement("li");
+        li.textContent = `${song.name} - ${song.artist}`;
+        li.style.cursor = "pointer";  // Makes it clear that the song is clickable
+        li.onclick = () => playSong(song.uri);  // Calls playSong with song URI
+        
+        playlistEl.appendChild(li);
+    });
+}
+
+
+        function playSong(uri) {
+            sendRequest("http://127.0.0.1:5000/play-song", "POST", { uri: uri });
+        }
+      function sendRequest(url) {
         fetch(url, { method: "POST" })
         .then(response => response.json())
         .then(data => console.log(data))
@@ -261,6 +290,10 @@ document.getElementById("volumeDownButton").addEventListener("click", function()
     document.getElementById("prevButton").addEventListener("click", function() {
         sendRequest("http://127.0.0.1:5000/previous");
     });
+
+    document.getElementById("fetchPlaylistButton").addEventListener("click", function() {
+            sendRequest("http://127.0.0.1:5000/current-playlist", "GET");
+        });
 </script>
 <script>
     document.getElementById("camera-button").addEventListener("click", function() {

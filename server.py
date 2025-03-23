@@ -193,6 +193,39 @@ def current_song():
         return jsonify({"error": str(e)}), 500
 
 
+@app.route('/music-progress', methods=['GET'])
+def get_music_progress():
+    try:
+        current_playback = sp.current_playback()
+        if not current_playback or not current_playback.get("item"):
+            return jsonify({"error": "No song currently playing"}), 400
+
+        return jsonify({
+            "progress": current_playback["progress_ms"],
+            "duration": current_playback["item"]["duration_ms"]
+        }), 200
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
+@app.route('/seek', methods=['POST'])
+def seek():
+    try:
+        data = request.get_json()
+        position_ms = data.get("position_ms")
+
+        if position_ms is None:
+            return jsonify({"error": "No position provided"}), 400
+
+        device_id = get_active_device()
+        if not device_id:
+            return jsonify({"error": "No active device found. Open Spotify on a device."}), 400
+
+        sp.seek_track(position_ms, device_id=device_id)
+        return jsonify({"message": f"Seeked to {position_ms} ms"}), 200
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
+
 
 
 if __name__ == '__main__':

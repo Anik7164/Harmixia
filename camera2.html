@@ -75,16 +75,19 @@
         });
 
         document.getElementById("nextButton").addEventListener("click", function() {
-            if (currentIndex + 1 < currentPlaylist.length) {
-                playSong(currentIndex + 1);
-            }
-        });
+    fetch("http://127.0.0.1:5000/next", { method: "POST" })
+    .then(response => response.json())
+    .then(data => console.log("Next Song:", data))
+    .catch(error => console.error("Error:", error));
+});
 
-        document.getElementById("prevButton").addEventListener("click", function() {
-            if (currentIndex - 1 >= 0) {
-                playSong(currentIndex - 1);
-            }
-        });
+document.getElementById("prevButton").addEventListener("click", function() {
+    fetch("http://127.0.0.1:5000/previous", { method: "POST" })
+    .then(response => response.json())
+    .then(data => console.log("Previous Song:", data))
+    .catch(error => console.error("Error:", error));
+});
+
 
         document.getElementById("fetchPlaylistButton").addEventListener("click", function() {
             sendRequest("http://127.0.0.1:5000/current-playlist", "GET");

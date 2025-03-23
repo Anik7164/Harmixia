@@ -194,86 +194,72 @@
         <a href="..\Two Factor Authentication using PHP\registration.php" class="w-full bg-blue-600 p-2 rounded mb-4 text-center block">Sign Up</a>
     </div>
 </div>
+
 <script>
-let currentPlaylist = [];
-        let currentIndex = -1;
+    let currentPlaylist = []; // Stores the current playlist
+    let currentIndex = -1;    // Tracks the selected song index
 
-        function sendRequest(url, method = "POST", body = null) {
-            fetch(url, { 
-                method: method,
-                headers: { "Content-Type": "application/json" },
-                body: body ? JSON.stringify(body) : null
-            })
-            .then(response => response.json())
-            .then(data => {
-                console.log(data);
-                if (data.playlist) {
-                    currentPlaylist = data.playlist;
-                    showPlaylist(data.playlist);
-                }
-            })
-            .catch(error => console.error("Error:", error));
-        }
-
-        function showPlaylist(songs) {
-            const playlistEl = document.getElementById("playlist");
-            playlistEl.innerHTML = "";
-            
-            songs.forEach((song, index) => {
-                const li = document.createElement("li");
-                li.textContent = `${song.name} - ${song.artist}`;
-                li.style.cursor = "pointer";
-                li.onclick = () => playSong(index);
-                
-                playlistEl.appendChild(li);
-            });
-        }
-
-        function playSong(index) {
-            if (index >= 0 && index < currentPlaylist.length) {
-                currentIndex = index;
-                sendRequest("http://127.0.0.1:5000/play-song", "POST", { uri: currentPlaylist[index].uri });
+    function sendRequest(url, method = "POST", body = null) {
+        fetch(url, { 
+            method: method,
+            headers: { "Content-Type": "application/json" },
+            body: body ? JSON.stringify(body) : null
+        })
+        .then(response => response.json())
+        .then(data => {
+            console.log(data);
+            if (data.playlist) {
+                currentPlaylist = data.playlist;  // Store playlist
+                showPlaylist(data.playlist);
             }
+        })
+        .catch(error => console.error("Error:", error));
+    }
+
+    function fetchCurrentSong() {
+        fetch("http://127.0.0.1:5000/current-song", { method: "GET" })
+        .then(response => response.json())
+        .then(data => {
+            if (data.error) {
+                document.getElementById("currentSong").textContent = "Not playing";
+                document.getElementById("albumArt").src = "";
+            } else {
+                document.getElementById("currentSong").textContent = `${data.name} - ${data.artist}`;
+                document.getElementById("albumArt").src = data.image;
+            }
+        })
+        .catch(error => console.error("Error:", error));
+    }
+</script>
+<script>
+     function showPlaylist(songs) {
+        const playlistEl = document.getElementById("playlist");
+        playlistEl.innerHTML = "";
+
+        songs.forEach((song, index) => {
+            const li = document.createElement("li");
+            li.textContent = `${song.name} - ${song.artist}`;
+            li.style.cursor = "pointer";
+            li.onclick = () => playSong(index);  // Set song selection
+            
+            playlistEl.appendChild(li);
+        });
+    }
+
+    function playSong(index) {
+        if (index >= 0 && index < currentPlaylist.length) {
+            currentIndex = index; // Update index when a song is selected
+            sendRequest("http://127.0.0.1:5000/play-song", "POST", { uri: currentPlaylist[index].uri });
         }
-function fetchCurrentSong() {
-    fetch("http://127.0.0.1:5000/current-song")
-    .then(response => {
-        if (!response.ok) {
-            throw new Error("Failed to fetch current song.");
-        }
-        return response.json();
-    })
-    .then(data => {
-        if (data.error) {
-            document.getElementById("currentSong").textContent = "Not playing";
-            document.getElementById("albumArt").src = "";
-        } else {
-            document.getElementById("currentSong").textContent = `${data.name} - ${data.artist}`;
-            document.getElementById("albumArt").src = data.image;
-        }
-    })
-    .catch(error => {
-        console.error("Error fetching song:", error);
-        document.getElementById("currentSong").textContent = "Error fetching song";
-    });}
+    }
 
-// Fetch song every second (1000ms)
-setInterval(fetchCurrentSong, 1000);
-
-// Fetch song on page load
-fetchCurrentSong();
-
-
-
-    document.getElementById("volumeUpButton").addEventListener("click", function() {
-    sendRequest("http://127.0.0.1:5000/volume-up");
-});
-
-document.getElementById("volumeDownButton").addEventListener("click", function() {
-    sendRequest("http://127.0.0.1:5000/volume-down");
-});
-
-    document.getElementById("playButton").addEventListener("click", function() {
+    // Auto-refresh currently playing song every 10 seconds
+    setInterval(fetchCurrentSong, 1000);
+    document.getElementById("refreshSongButton").addEventListener("click", fetchCurrentSong);
+    fetchCurrentSong(); // Fetch song on page load
+</script>
+<script>
+   document.getElementById("playButton").addEventListener("click", function() {
         sendRequest("http://127.0.0.1:5000/play");
     });
 
@@ -282,19 +268,29 @@ document.getElementById("volumeDownButton").addEventListener("click", function()
     });
 
     document.getElementById("nextButton").addEventListener("click", function() {
-            if (currentIndex + 1 < currentPlaylist.length) {
-                playSong(currentIndex + 1);
-            }
-        });
+        if (currentIndex + 1 < currentPlaylist.length) {
+            playSong(currentIndex + 1);  // Move to the next song
+        }
+    });
 
-        document.getElementById("prevButton").addEventListener("click", function() {
-            if (currentIndex - 1 >= 0) {
-                playSong(currentIndex - 1);
-            }
-        });
-        document.getElementById("fetchPlaylistButton").addEventListener("click", function() {
-            sendRequest("http://127.0.0.1:5000/current-playlist", "GET");
-        });
+    document.getElementById("prevButton").addEventListener("click", function() {
+        if (currentIndex - 1 >= 0) {
+            playSong(currentIndex - 1);  // Move to the previous song
+        }
+    });
+
+    document.getElementById("fetchPlaylistButton").addEventListener("click", function() {
+        sendRequest("http://127.0.0.1:5000/current-playlist", "GET");
+    });
+
+    document.getElementById("volumeUpButton").addEventListener("click", function() {
+        sendRequest("http://127.0.0.1:5000/volume-up");
+    });
+
+    document.getElementById("volumeDownButton").addEventListener("click", function() {
+        sendRequest("http://127.0.0.1:5000/volume-down");
+    });
+
 </script>
 <script>
     document.getElementById("camera-button").addEventListener("click", function() {
@@ -416,8 +412,9 @@ document.getElementById("volumeDownButton").addEventListener("click", function()
                 <img src="${track.album.images[0].url}" alt="${track.name}" class="w-16 h-16">
                 <div class="track-info">
                     <div class="track-name text-lg">${track.name}</div>
-                    <div class="track-artist text-sm text-gray-400">${track.artists.map(artist => artist.name).join(', ')}</div>
-                </div>
+                    <div class="track-artist text-sm text-gray-400">${track.artists.map(artist => artist.name).join(', ')}
+                        </div>
+               
             `;
 
             resultsContainer.appendChild(trackElement);

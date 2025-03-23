@@ -59,15 +59,18 @@
 <div class="w-full md:w-1/4 bg-gray-900 p-4 flex flex-col">
     
     <div class="mt-auto p-4 bg-gray-800 flex items-center justify-around" bis_skin_checked="1">
-        <img id="albumArt" src="" alt="Album Art" style="width: 350px;height: 480px;">
-       
+        <img id="albumArt" src="" alt="Album Art" style="width: 350px;height: 420px;">
     </div>
     <div class="mt-auto p-4 bg-gray-800 flex items-center justify-around">
-<p class="text-center,text-lg" id="currentSong"> </p>
-
-        <p id="status"></p>
-        
+<p class="text-center,text-lg" id="currentSong"> </p>   
+        <p id="status"></p>     
     </div>
+<div>
+    <label for="progressBar"></label>
+    <input type="range" id="progressBar" min="0" max="100" value="0" style="
+    width: 260px;">
+<span id="currentTime">0:00</span> / <span id="totalTime">0:00</span>
+</div>
     <div class="mt-auto p-4 bg-gray-800 flex items-center justify-around">
         <button class="text-white text-2xl focus:outline-none" id="prevButton">
             <p id="status"></p>
@@ -252,7 +255,48 @@
             sendRequest("http://127.0.0.1:5000/play-song", "POST", { uri: currentPlaylist[index].uri });
         }
     }
+    let totalDuration = 0; // Store song duration in milliseconds
 
+function updateProgress() {
+    fetch("http://127.0.0.1:5000/music-progress", { method: "GET" })
+    .then(response => response.json())
+    .then(data => {
+        if (data.progress !== undefined && data.duration !== undefined) {
+            let progressBar = document.getElementById("progressBar");
+            let currentTime = document.getElementById("currentTime");
+            let totalTime = document.getElementById("totalTime");
+
+            totalDuration = data.duration; // Store total duration
+
+            let progressPercent = (data.progress / data.duration) * 100;
+            progressBar.value = progressPercent;
+
+            currentTime.textContent = formatTime(data.progress);
+            totalTime.textContent = formatTime(data.duration);
+        }
+    })
+    .catch(error => console.error("Error:", error));
+}
+
+function formatTime(ms) {
+    let seconds = Math.floor(ms / 1000);
+    let minutes = Math.floor(seconds / 60);
+    seconds %= 60;
+    return `${minutes}:${seconds.toString().padStart(2, "0")}`;
+}
+
+document.getElementById("progressBar").addEventListener("change", function(event) {
+    if (totalDuration > 0) {
+        let newPosition = (event.target.value / 100) * totalDuration;
+
+        fetch("http://127.0.0.1:5000/seek", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ position_ms: Math.floor(newPosition) }) // Send position in milliseconds
+        }).catch(error => console.error("Error:", error));
+    }
+});
+setInterval(updateProgress, 1000); // Update progress every second
     // Auto-refresh currently playing song every 10 seconds
     setInterval(fetchCurrentSong, 1000);
     document.getElementById("refreshSongButton").addEventListener("click", fetchCurrentSong);

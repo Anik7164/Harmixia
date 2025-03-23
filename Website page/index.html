@@ -59,16 +59,18 @@
 <div class="w-full md:w-1/4 bg-gray-900 p-4 flex flex-col">
     
     <div class="mt-auto p-4 bg-gray-800 flex items-center justify-around" bis_skin_checked="1">
-        <img id="albumArt" src="" alt="Album Art" style="width: 350px;height: 480px;">
-        <ul id="playlist"></ul>
-        <p id="status"></p>
+        <img id="albumArt" src="" alt="Album Art" style="width: 350px;height: 420px;">
     </div>
     <div class="mt-auto p-4 bg-gray-800 flex items-center justify-around">
-<p class="text-center,text-lg" id="currentSong"> </p>
-
-        <p id="status"></p>
-        
+<p class="text-center,text-lg" id="currentSong"> </p>   
+        <p id="status"></p>     
     </div>
+<div>
+    <label for="progressBar"></label>
+    <input type="range" id="progressBar" min="0" max="100" value="0" style="
+    width: 260px;">
+<span id="currentTime">0:00</span> / <span id="totalTime">0:00</span>
+</div>
     <div class="mt-auto p-4 bg-gray-800 flex items-center justify-around">
         <button class="text-white text-2xl focus:outline-none" id="prevButton">
             <p id="status"></p>
@@ -181,13 +183,9 @@
 
 <!-- Now Playing -->
 <div class="w-full md:w-1/4 bg-gray-900 p-4">
-    <h2 class="text-xl font-bold mb-4">Now Playing</h2>
-    <img alt="Album cover of Escalate" class="w-full h-auto" height="300"
-         src="https://storage.googleapis.com/a1aa/image/JAvBtAN75IxM0qwF5uO6BglyMVGJLIRSbekdoplIoeg.jpg" width="300"/>
-    <div class="mt-4">
-        <p class="text-lg">Mine</p>
-        <p class="text-sm text-gray-400">Aimer</p>
-    </div>
+    <button id="fetchPlaylistButton">Show Playlist</button>
+    <p id="playlist"></p>
+    <p id="status"></p>
 </div>
 
 <!-- The Modal -->
@@ -199,54 +197,113 @@
         <a href="..\Two Factor Authentication using PHP\registration.php" class="w-full bg-blue-600 p-2 rounded mb-4 text-center block">Sign Up</a>
     </div>
 </div>
-<script>function fetchCurrentSong() {
-    fetch("http://127.0.0.1:5000/current-song")
-    .then(response => {
-        if (!response.ok) {
-            throw new Error("Failed to fetch current song.");
-        }
-        return response.json();
-    })
-    .then(data => {
-        if (data.error) {
-            document.getElementById("currentSong").textContent = "Not playing";
-            document.getElementById("albumArt").src = "";
-        } else {
-            document.getElementById("currentSong").textContent = `${data.name} - ${data.artist}`;
-            document.getElementById("albumArt").src = data.image;
-        }
-    })
-    .catch(error => {
-        console.error("Error fetching song:", error);
-        document.getElementById("currentSong").textContent = "Error fetching song";
-    });
-}
 
-// Fetch song every second (1000ms)
-setInterval(fetchCurrentSong, 1000);
-
-// Fetch song on page load
-fetchCurrentSong();
-
-</script>
 <script>
+    let currentPlaylist = []; // Stores the current playlist
+    let currentIndex = -1;    // Tracks the selected song index
 
-    
-    function sendRequest(url) {
-        fetch(url, { method: "POST" })
+    function sendRequest(url, method = "POST", body = null) {
+        fetch(url, { 
+            method: method,
+            headers: { "Content-Type": "application/json" },
+            body: body ? JSON.stringify(body) : null
+        })
         .then(response => response.json())
-        .then(data => console.log(data))
+        .then(data => {
+            console.log(data);
+            if (data.playlist) {
+                currentPlaylist = data.playlist;  // Store playlist
+                showPlaylist(data.playlist);
+            }
+        })
         .catch(error => console.error("Error:", error));
     }
-    document.getElementById("volumeUpButton").addEventListener("click", function() {
-    sendRequest("http://127.0.0.1:5000/volume-up");
-});
 
-document.getElementById("volumeDownButton").addEventListener("click", function() {
-    sendRequest("http://127.0.0.1:5000/volume-down");
-});
+    function fetchCurrentSong() {
+        fetch("http://127.0.0.1:5000/current-song", { method: "GET" })
+        .then(response => response.json())
+        .then(data => {
+            if (data.error) {
+                document.getElementById("currentSong").textContent = "Not playing";
+                document.getElementById("albumArt").src = "";
+            } else {
+                document.getElementById("currentSong").textContent = `${data.name} - ${data.artist}`;
+                document.getElementById("albumArt").src = data.image;
+            }
+        })
+        .catch(error => console.error("Error:", error));
+    }
+</script>
+<script>
+     function showPlaylist(songs) {
+        const playlistEl = document.getElementById("playlist");
+        playlistEl.innerHTML = "";
 
-    document.getElementById("playButton").addEventListener("click", function() {
+        songs.forEach((song, index) => {
+            const li = document.createElement("li");
+            li.textContent = `${song.name} - ${song.artist}`;
+            li.style.cursor = "pointer";
+            li.onclick = () => playSong(index);  // Set song selection
+            
+            playlistEl.appendChild(li);
+        });
+    }
+
+    function playSong(index) {
+        if (index >= 0 && index < currentPlaylist.length) {
+            currentIndex = index; // Update index when a song is selected
+            sendRequest("http://127.0.0.1:5000/play-song", "POST", { uri: currentPlaylist[index].uri });
+        }
+    }
+    let totalDuration = 0; // Store song duration in milliseconds
+
+function updateProgress() {
+    fetch("http://127.0.0.1:5000/music-progress", { method: "GET" })
+    .then(response => response.json())
+    .then(data => {
+        if (data.progress !== undefined && data.duration !== undefined) {
+            let progressBar = document.getElementById("progressBar");
+            let currentTime = document.getElementById("currentTime");
+            let totalTime = document.getElementById("totalTime");
+
+            totalDuration = data.duration; // Store total duration
+
+            let progressPercent = (data.progress / data.duration) * 100;
+            progressBar.value = progressPercent;
+
+            currentTime.textContent = formatTime(data.progress);
+            totalTime.textContent = formatTime(data.duration);
+        }
+    })
+    .catch(error => console.error("Error:", error));
+}
+
+function formatTime(ms) {
+    let seconds = Math.floor(ms / 1000);
+    let minutes = Math.floor(seconds / 60);
+    seconds %= 60;
+    return `${minutes}:${seconds.toString().padStart(2, "0")}`;
+}
+
+document.getElementById("progressBar").addEventListener("change", function(event) {
+    if (totalDuration > 0) {
+        let newPosition = (event.target.value / 100) * totalDuration;
+
+        fetch("http://127.0.0.1:5000/seek", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ position_ms: Math.floor(newPosition) }) // Send position in milliseconds
+        }).catch(error => console.error("Error:", error));
+    }
+});
+setInterval(updateProgress, 1000); // Update progress every second
+    // Auto-refresh currently playing song every 10 seconds
+    setInterval(fetchCurrentSong, 1000);
+    document.getElementById("refreshSongButton").addEventListener("click", fetchCurrentSong);
+    fetchCurrentSong(); // Fetch song on page load
+</script>
+<script>
+   document.getElementById("playButton").addEventListener("click", function() {
         sendRequest("http://127.0.0.1:5000/play");
     });
 
@@ -255,12 +312,29 @@ document.getElementById("volumeDownButton").addEventListener("click", function()
     });
 
     document.getElementById("nextButton").addEventListener("click", function() {
-        sendRequest("http://127.0.0.1:5000/next");
+        if (currentIndex + 1 < currentPlaylist.length) {
+            playSong(currentIndex + 1);  // Move to the next song
+        }
     });
 
     document.getElementById("prevButton").addEventListener("click", function() {
-        sendRequest("http://127.0.0.1:5000/previous");
+        if (currentIndex - 1 >= 0) {
+            playSong(currentIndex - 1);  // Move to the previous song
+        }
     });
+
+    document.getElementById("fetchPlaylistButton").addEventListener("click", function() {
+        sendRequest("http://127.0.0.1:5000/current-playlist", "GET");
+    });
+
+    document.getElementById("volumeUpButton").addEventListener("click", function() {
+        sendRequest("http://127.0.0.1:5000/volume-up");
+    });
+
+    document.getElementById("volumeDownButton").addEventListener("click", function() {
+        sendRequest("http://127.0.0.1:5000/volume-down");
+    });
+
 </script>
 <script>
     document.getElementById("camera-button").addEventListener("click", function() {
@@ -382,8 +456,9 @@ document.getElementById("volumeDownButton").addEventListener("click", function()
                 <img src="${track.album.images[0].url}" alt="${track.name}" class="w-16 h-16">
                 <div class="track-info">
                     <div class="track-name text-lg">${track.name}</div>
-                    <div class="track-artist text-sm text-gray-400">${track.artists.map(artist => artist.name).join(', ')}</div>
-                </div>
+                    <div class="track-artist text-sm text-gray-400">${track.artists.map(artist => artist.name).join(', ')}
+                        </div>
+               
             `;
 
             resultsContainer.appendChild(trackElement);
@@ -416,16 +491,6 @@ document.getElementById("volumeDownButton").addEventListener("click", function()
         document.getElementById("loginModal").style.display = "none";
     }
 
-    function togglePlayPause() {
-        const playPauseIcon = document.getElementById("playPauseIcon");
-        if (playPauseIcon.classList.contains("fa-play")) {
-            playPauseIcon.classList.remove("fa-play");
-            playPauseIcon.classList.add("fa-pause");
-        } else {
-            playPauseIcon.classList.remove("fa-pause");
-            playPauseIcon.classList.add("fa-play");
-        }
-    }
 </script>
 </body>
 </html>

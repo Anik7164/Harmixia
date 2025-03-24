@@ -20,7 +20,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
         if ($otp_expiry >= time()) {
             $_SESSION['user_id'] = $data['id'];
             unset($_SESSION['temp_user']);
-            header("Location: dashboard.php");
+            header("Location: ..\Website page\index.html");
             exit();
         } else {
             ?>

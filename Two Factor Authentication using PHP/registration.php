@@ -3,7 +3,7 @@ session_start();
 include 'conn.php';
 
 if (isset($_SESSION['user_id'])) {
-    header("dashboard.php");
+    header("..\Website page\index.html");
     exit();
 }
 

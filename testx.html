@@ -1,0 +1,520 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Face Emotion Scanner</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+            background-color: #f5f5f5;
+            color: #333;
+        }
+        
+        h1 {
+            color: #1DB954;
+            text-align: center;
+            margin-bottom: 30px;
+        }
+        
+        .button-group {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+            margin-bottom: 20px;
+            justify-content: center;
+        }
+        
+        button {
+            background-color: #1DB954;
+            color: white;
+            border: none;
+            padding: 10px 15px;
+            border-radius: 20px;
+            cursor: pointer;
+            font-weight: bold;
+            transition: background-color 0.3s;
+        }
+        
+        button:hover {
+            background-color: #1ed760;
+        }
+        
+        #currentSong {
+            font-weight: bold;
+            font-size: 1.2em;
+        }
+        
+        #albumArt {
+            border-radius: 5px;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.2);
+            display: block;
+            margin: 15px auto;
+        }
+        
+        #playlist {
+            list-style-type: none;
+            padding: 0;
+        }
+        
+        #playlist li {
+            padding: 10px;
+            margin: 5px 0;
+            background-color: white;
+            border-radius: 5px;
+            cursor: pointer;
+            transition: background-color 0.2s;
+        }
+        
+        #playlist li:hover {
+            background-color: #f0f0f0;
+        }
+        
+        #recentlyPlayed {
+            max-height: 400px;
+            overflow-y: auto;
+            border-radius: 10px;
+            background-color: white;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+            padding: 15px;
+            margin-top: 20px;
+        }
+        
+        .recent-song {
+            display: flex;
+            align-items: center;
+            padding: 10px;
+            margin: 8px 0;
+            border-radius: 5px;
+            background-color: #f9f9f9;
+            transition: background-color 0.2s;
+        }
+        
+        .recent-song:hover {
+            background-color: #e8f5e9;
+        }
+        
+        .song-number {
+            font-weight: bold;
+            color: #1DB954;
+            min-width: 25px;
+        }
+        
+        .song-info {
+            flex-grow: 1;
+            margin-left: 15px;
+        }
+        
+        .song-name {
+            font-weight: bold;
+            margin-bottom: 3px;
+        }
+        
+        .song-artist {
+            color: #666;
+            font-size: 0.9em;
+        }
+        
+        .progress-container {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            margin: 20px 0;
+        }
+        
+        #progressBar {
+            flex-grow: 1;
+            height: 6px;
+            border-radius: 3px;
+            cursor: pointer;
+        }
+        
+        .time-display {
+            font-size: 0.9em;
+            color: #666;
+            min-width: 50px;
+            text-align: center;
+        }
+        
+        .now-playing {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+            margin-bottom: 20px;
+        }
+        
+        .section-title {
+            color: #1DB954;
+            border-bottom: 2px solid #1DB954;
+            padding-bottom: 5px;
+            margin-top: 30px;
+        }
+
+        .like-button {
+            background: none;
+            border: none;
+            cursor: pointer;
+            padding: 5px 10px;
+            margin-left: 10px;
+            transition: transform 0.2s;
+            font-size: 1.5em;
+        }
+        .liked {
+            color: #ff0000; /* Red color for liked */
+        }
+        .not-liked {
+            color: #ffffff; /* White color for outline */
+            -webkit-text-stroke: 1px #b3b3b3; /* Creates outline effect */
+            text-stroke: 1px #b3b3b3;
+        }
+        .like-button:hover {
+            transform: scale(1.2);
+        }
+
+        #statusMessage {
+            text-align: center;
+            min-height: 20px;
+            color: #1DB954;
+            font-weight: bold;
+            margin-top: 15px;
+        }
+        .error {
+            color: #ff4d4d !important;
+        }
+    </style>
+</head>
+<body>
+    <h1>Emotion Detection with Spotify</h1>
+    
+    <div class="button-group">
+        <button id="startButton">Start Scanning</button>
+        <button id="playButton">Play</button>
+        <button id="pauseButton">Pause</button>
+        <button id="nextButton">Next</button>
+        <button id="prevButton">Previous</button>
+        <button id="fetchPlaylistButton">Show Playlist</button>
+        <button id="volumeUpButton">Volume +</button>
+        <button id="volumeDownButton">Volume -</button>
+    </div>
+    
+    <div class="now-playing">
+        <img id="albumArt" src="" alt="Album Art" style="width: 80px; height: 80px;">
+        <div>
+            <p><strong>Now Playing:</strong> <span id="currentSong">Not playing</span></p>
+            <button id="refreshSongButton">Refresh</button>
+            <button id="likeButton" class="like-button not-liked">❤</button>
+        </div>
+    </div>
+    
+    <div class="progress-container">
+        <span id="currentTime" class="time-display">0:00</span>
+        <input type="range" id="progressBar" min="0" max="100" value="0">
+        <span id="totalTime" class="time-display">0:00</span>
+    </div>
+    
+    <p id="statusMessage"></p>
+    
+    <h3 class="section-title">Current Playlist</h3>
+    <ul id="playlist"></ul>
+    
+    <h3 class="section-title">Recently Played</h3>
+    <div id="recentlyPlayed"></div>
+    
+    <p id="status"></p>
+
+    <script>
+        let currentPlaylist = []; // Stores the current playlist
+        let currentIndex = -1;    // Tracks the selected song index
+        const targetPlaylistUri = "spotify:playlist:2RVYDBfV3nu98qEb8ocPLA"; // Your target playlist URI
+        let currentSongData = null; // Store current song data for like functionality
+
+        function sendRequest(url, method = "POST", body = null) {
+            return fetch(url, { 
+                method: method,
+                headers: { "Content-Type": "application/json" },
+                body: body ? JSON.stringify(body) : null
+            })
+            .then(response => response.json())
+            .then(data => {
+                console.log(data);
+                if (data.playlist) {
+                    currentPlaylist = data.playlist;  // Store playlist
+                    showPlaylist(data.playlist);
+                }
+                return data;
+            })
+            .catch(error => {
+                console.error("Error:", error);
+                throw error;
+            });
+        }
+
+        function fetchCurrentSong() {
+            fetch("http://127.0.0.1:5000/current-song", { method: "GET" })
+            .then(response => response.json())
+            .then(data => {
+                if (data.error) {
+                    document.getElementById("currentSong").textContent = "Not playing";
+                    document.getElementById("albumArt").src = "";
+                    currentSongData = null;
+                    updateLikeButton(false);
+                } else {
+                    document.getElementById("currentSong").textContent = `${data.name} - ${data.artist}`;
+                    document.getElementById("albumArt").src = data.image;
+                    currentSongData = data;
+                    updateLikeButton(data.is_liked || data.in_my_playlist);
+                    // Automatically update recently played when a new song is detected
+                    updateRecentlyPlayed();
+                }
+            })
+            .catch(error => console.error("Error:", error));
+        }
+
+        function updateLikeButton(isLiked) {
+            const likeButton = document.getElementById('likeButton');
+            likeButton.className = `like-button ${isLiked ? 'liked' : 'not-liked'}`;
+        }
+
+        function toggleLike() {
+            if (!currentSongData) return;
+            
+            const statusEl = document.getElementById('statusMessage');
+            const isLiked = currentSongData.is_liked || currentSongData.in_my_playlist;
+            
+            if (isLiked) {
+                // Dislike the song
+                statusEl.textContent = "Removing from your playlist...";
+                statusEl.classList.remove('error');
+                
+                fetch('http://127.0.0.1:5000/dislike-song', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ uri: currentSongData.uri })
+                })
+                .then(response => {
+                    if (!response.ok) {
+                        throw new Error('Failed to remove song');
+                    }
+                    return response.json();
+                })
+                .then(data => {
+                    if (data.error) {
+                        throw new Error(data.error);
+                    }
+                    showStatusMessage(data.message || "Removed from your playlist");
+                    fetchCurrentSong(); // Refresh song status
+                })
+                .catch(error => {
+                    showError(error.message || "Failed to remove song from your playlist");
+                    console.error('Dislike error:', error);
+                });
+            } else {
+                // Like the song
+                statusEl.textContent = "Adding to your playlist...";
+                statusEl.classList.remove('error');
+                
+                fetch('http://127.0.0.1:5000/like-song', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ uri: currentSongData.uri })
+                })
+                .then(response => {
+                    if (!response.ok) {
+                        throw new Error('Failed to add song');
+                    }
+                    return response.json();
+                })
+                .then(data => {
+                    if (data.error) {
+                        throw new Error(data.error);
+                    }
+                    showStatusMessage(data.message || "Added to your playlist!");
+                    fetchCurrentSong(); // Refresh song status
+                })
+                .catch(error => {
+                    showError(error.message || "Failed to add song to your playlist");
+                    console.error('Like error:', error);
+                });
+            }
+        }
+
+        function showStatusMessage(message) {
+            const statusEl = document.getElementById('statusMessage');
+            statusEl.textContent = message;
+            statusEl.style.color = '#1DB954';
+            setTimeout(() => {
+                statusEl.textContent = '';
+            }, 3000);
+        }
+
+        function showError(message) {
+            const statusEl = document.getElementById('statusMessage');
+            statusEl.textContent = message;
+            statusEl.style.color = '#ff4d4d';
+            statusEl.classList.add('error');
+            setTimeout(() => {
+                statusEl.textContent = '';
+            }, 3000);
+        }
+
+        function showPlaylist(songs) {
+            const playlistEl = document.getElementById("playlist");
+            playlistEl.innerHTML = "";
+
+            songs.forEach((song, index) => {
+                const li = document.createElement("li");
+                li.innerHTML = `
+                    <div class="song-name">${song.name}</div>
+                    <div class="song-artist">${song.artist}</div>
+                `;
+                li.onclick = () => playSong(index);  // Set song selection
+                
+                playlistEl.appendChild(li);
+            });
+        }
+
+        function playSong(index) {
+            if (index >= 0 && index < currentPlaylist.length) {
+                currentIndex = index; // Update index when a song is selected
+                sendRequest("http://127.0.0.1:5000/play-song", "POST", { 
+                    uri: currentPlaylist[index].uri,
+                    context_uri: targetPlaylistUri
+                })
+                .then(() => updateRecentlyPlayed());
+            }
+        }
+
+        function updateRecentlyPlayed() {
+            fetch("http://127.0.0.1:5000/recently-played", { method: "GET" })
+            .then(response => response.json())
+            .then(data => {
+                if (data.recently_played) {
+                    const recentlyPlayedEl = document.getElementById("recentlyPlayed");
+                    recentlyPlayedEl.innerHTML = ""; // Clear previous content
+
+                    data.recently_played.forEach((song, index) => {
+                        const songDiv = document.createElement("div");
+                        songDiv.className = "recent-song";
+                        songDiv.innerHTML = `
+                            <div class="song-number">${index + 1}</div>
+                            <div class="song-info">
+                                <div class="song-name">${song.name}</div>
+                                <div class="song-artist">${song.artist}</div>
+                            </div>
+                        `;
+                        songDiv.onclick = () => {
+                            // Play the song from the history playlist
+                            sendRequest("http://127.0.0.1:5000/play-song", "POST", { 
+                                uri: song.uri,
+                                context_uri: targetPlaylistUri
+                            })
+                            .then(() => updateRecentlyPlayed());
+                        };
+                        
+                        recentlyPlayedEl.appendChild(songDiv);
+                    });
+                }
+            })
+            .catch(error => console.error("Error:", error));
+        }
+
+        let totalDuration = 0; // Store song duration in milliseconds
+
+        function updateProgress() {
+            fetch("http://127.0.0.1:5000/music-progress", { method: "GET" })
+            .then(response => response.json())
+            .then(data => {
+                if (data.progress !== undefined && data.duration !== undefined) {
+                    let progressBar = document.getElementById("progressBar");
+                    let currentTime = document.getElementById("currentTime");
+                    let totalTime = document.getElementById("totalTime");
+
+                    totalDuration = data.duration; // Store total duration
+
+                    let progressPercent = (data.progress / data.duration) * 100;
+                    progressBar.value = progressPercent;
+
+                    currentTime.textContent = formatTime(data.progress);
+                    totalTime.textContent = formatTime(data.duration);
+                }
+            })
+            .catch(error => console.error("Error:", error));
+        }
+
+        function formatTime(ms) {
+            let seconds = Math.floor(ms / 1000);
+            let minutes = Math.floor(seconds / 60);
+            seconds %= 60;
+            return `${minutes}:${seconds.toString().padStart(2, "0")}`;
+        }
+
+        document.getElementById("progressBar").addEventListener("change", function(event) {
+            if (totalDuration > 0) {
+                let newPosition = (event.target.value / 100) * totalDuration;
+
+                fetch("http://127.0.0.1:5000/seek", {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({ position_ms: Math.floor(newPosition) }) // Send position in milliseconds
+                }).catch(error => console.error("Error:", error));
+            }
+        });
+
+        setInterval(updateProgress, 1000); // Update progress every second
+
+        // Auto-refresh currently playing song every second
+        setInterval(fetchCurrentSong, 1000);
+        document.getElementById("refreshSongButton").addEventListener("click", fetchCurrentSong);
+        document.getElementById("likeButton").addEventListener("click", toggleLike);
+        fetchCurrentSong(); // Fetch song on page load
+        updateRecentlyPlayed(); // Load recently played on page load
+
+        // Event listeners for buttons
+        document.getElementById("startButton").addEventListener("click", function() {
+            sendRequest("http://127.0.0.1:5000/start-scanning");
+        });
+
+        document.getElementById("playButton").addEventListener("click", function() {
+            sendRequest("http://127.0.0.1:5000/play")
+                .then(() => updateRecentlyPlayed());
+        });
+
+        document.getElementById("pauseButton").addEventListener("click", function() {
+            sendRequest("http://127.0.0.1:5000/pause");
+        });
+
+        document.getElementById("nextButton").addEventListener("click", function() {
+            if (currentIndex + 1 < currentPlaylist.length) {
+                playSong(currentIndex + 1);  // Move to the next song
+            } else {
+                sendRequest("http://127.0.0.1:5000/next")
+                    .then(() => updateRecentlyPlayed());
+            }
+        });
+
+        document.getElementById("prevButton").addEventListener("click", function() {
+            if (currentIndex - 1 >= 0) {
+                playSong(currentIndex - 1);  // Move to the previous song
+            } else {
+                sendRequest("http://127.0.0.1:5000/previous")
+                    .then(() => updateRecentlyPlayed());
+            }
+        });
+
+        document.getElementById("fetchPlaylistButton").addEventListener("click", function() {
+            sendRequest("http://127.0.0.1:5000/current-playlist", "GET");
+        });
+
+        document.getElementById("volumeUpButton").addEventListener("click", function() {
+            sendRequest("http://127.0.0.1:5000/volume-up");
+        });
+
+        document.getElementById("volumeDownButton").addEventListener("click", function() {
+            sendRequest("http://127.0.0.1:5000/volume-down");
+        });
+    </script>
+</body>
+</html>

@@ -49,6 +49,37 @@
             padding: 16px;
             margin-top: 8px;
         }
+        
+        .like-button {
+            background: none;
+            border: none;
+            cursor: pointer;
+            padding: 5px 10px;
+            margin-left: 10px;
+            transition: transform 0.2s;
+            font-size: 1.5em;
+        }
+        .liked {
+            color: #ff0000; /* Red color for liked */
+        }
+        .not-liked {
+            color: #ffffff; /* White color for outline */
+            -webkit-text-stroke: 1px #b3b3b3; /* Creates outline effect */
+            text-stroke: 1px #b3b3b3;
+        }
+        .like-button:hover {
+            transform: scale(1.2);
+        }
+        #statusMessage {
+            text-align: center;
+            min-height: 20px;
+            color: #1DB954;
+            font-weight: bold;
+            margin-top: 15px;
+        }
+        .error {
+            color: #ff4d4d !important;
+        }
     </style>
 </head>
 <body class="bg-black text-white h-screen flex flex-col md:flex-row">
@@ -62,7 +93,12 @@
         <img id="albumArt" src="" alt="Album Art" style="width: 350px;height: 420px;">
     </div>
     <div class="mt-auto p-4 bg-gray-800 flex items-center justify-around">
-<p class="text-center,text-lg" id="currentSong"> </p>   
+<p class="text-center,text-lg" id="currentSong"> </p>
+<button id="likeButton" class="like-button not-liked" style="
+    padding-left: 140px;
+    border-left-width: 0px;
+">❤</button>   
+<p id="statusMessage"></p>
         <p id="status"></p>     
     </div>
 <div>
@@ -127,7 +163,7 @@
     <!-- Search Results -->
     <div id="results" class="search-results"></div>
 
-    <!-- Rising Artists -->
+    <!-- reecently play -->
     <div class="w-full md:w-1/4 bg-gray-900 p-4" bis_skin_checked="1" style="width: 832px;height: 532px;"><h2 class="text-xl font-bold">Recently Played</h2>
         <div id="recentlyPlayed" bis_skin_checked="1" style="height: 500px;width: 800px;"></div>
     </div>
@@ -179,41 +215,136 @@
 </div>
 
 <script>
-    let currentPlaylist = []; // Stores the current playlist
-    let currentIndex = -1;    // Tracks the selected song index
+        let currentPlaylist = []; // Stores the current playlist
+        let currentIndex = -1;    // Tracks the selected song index
+        const targetPlaylistUri = "spotify:playlist:2RVYDBfV3nu98qEb8ocPLA"; // Your target playlist URI
+        let currentSongData = null; // Store current song data for like functionality
 
-    function sendRequest(url, method = "POST", body = null) {
-        fetch(url, { 
-            method: method,
-            headers: { "Content-Type": "application/json" },
-            body: body ? JSON.stringify(body) : null
-        })
-        .then(response => response.json())
-        .then(data => {
-            console.log(data);
-            if (data.playlist) {
-                currentPlaylist = data.playlist;  // Store playlist
-                showPlaylist(data.playlist);
-            }
-        })
-        .catch(error => console.error("Error:", error));
-    }
+        function sendRequest(url, method = "POST", body = null) {
+            return fetch(url, { 
+                method: method,
+                headers: { "Content-Type": "application/json" },
+                body: body ? JSON.stringify(body) : null
+            })
+            .then(response => response.json())
+            .then(data => {
+                console.log(data);
+                if (data.playlist) {
+                    currentPlaylist = data.playlist;  // Store playlist
+                    showPlaylist(data.playlist);
+                }
+                return data;
+            })
+            .catch(error => {
+                console.error("Error:", error);
+                throw error;
+            });
+        }
 
-    function fetchCurrentSong() {
+        function fetchCurrentSong() {
             fetch("http://127.0.0.1:5000/current-song", { method: "GET" })
             .then(response => response.json())
             .then(data => {
                 if (data.error) {
                     document.getElementById("currentSong").textContent = "Not playing";
                     document.getElementById("albumArt").src = "";
+                    currentSongData = null;
+                    updateLikeButton(false);
                 } else {
                     document.getElementById("currentSong").textContent = `${data.name} - ${data.artist}`;
                     document.getElementById("albumArt").src = data.image;
+                    currentSongData = data;
+                    updateLikeButton(data.is_liked || data.in_my_playlist);
                     // Automatically update recently played when a new song is detected
                     updateRecentlyPlayed();
                 }
             })
             .catch(error => console.error("Error:", error));
+        }
+        function updateLikeButton(isLiked) {
+            const likeButton = document.getElementById('likeButton');
+            likeButton.className = `like-button ${isLiked ? 'liked' : 'not-liked'}`;
+        }
+
+        function toggleLike() {
+            if (!currentSongData) return;
+            
+            const statusEl = document.getElementById('statusMessage');
+            const isLiked = currentSongData.is_liked || currentSongData.in_my_playlist;
+            
+            if (isLiked) {
+                // Dislike the song
+                statusEl.textContent = "Removing from your playlist...";
+                statusEl.classList.remove('error');
+                
+                fetch('http://127.0.0.1:5000/dislike-song', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ uri: currentSongData.uri })
+                })
+                .then(response => {
+                    if (!response.ok) {
+                        throw new Error('Failed to remove song');
+                    }
+                    return response.json();
+                })
+                .then(data => {
+                    if (data.error) {
+                        throw new Error(data.error);
+                    }
+                    showStatusMessage(data.message || "Removed from your playlist");
+                    fetchCurrentSong(); // Refresh song status
+                })
+                .catch(error => {
+                    showError(error.message || "Failed to remove song from your playlist");
+                    console.error('Dislike error:', error);
+                });
+            } else {
+                // Like the song
+                statusEl.textContent = "Adding to your playlist...";
+                statusEl.classList.remove('error');
+                
+                fetch('http://127.0.0.1:5000/like-song', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ uri: currentSongData.uri })
+                })
+                .then(response => {
+                    if (!response.ok) {
+                        throw new Error('Failed to add song');
+                    }
+                    return response.json();
+                })
+                .then(data => {
+                    if (data.error) {
+                        throw new Error(data.error);
+                    }
+                    showStatusMessage(data.message || "Added to your playlist!");
+                    fetchCurrentSong(); // Refresh song status
+                })
+                .catch(error => {
+                    showError(error.message || "Failed to add song to your playlist");
+                    console.error('Like error:', error);
+                });
+            }
+        }
+        function showStatusMessage(message) {
+            const statusEl = document.getElementById('statusMessage');
+            statusEl.textContent = message;
+            statusEl.style.color = '#1DB954';
+            setTimeout(() => {
+                statusEl.textContent = '';
+            }, 3000);
+        }
+
+        function showError(message) {
+            const statusEl = document.getElementById('statusMessage');
+            statusEl.textContent = message;
+            statusEl.style.color = '#ff4d4d';
+            statusEl.classList.add('error');
+            setTimeout(() => {
+                statusEl.textContent = '';
+            }, 3000);
         }
 </script>
 <script>
@@ -231,15 +362,18 @@
         });
     }
 
-    function playSong(index) {
+        function playSong(index) {
             if (index >= 0 && index < currentPlaylist.length) {
                 currentIndex = index; // Update index when a song is selected
-                sendRequest("http://127.0.0.1:5000/play-song", "POST", { uri: currentPlaylist[index].uri })
-                    .then(() => updateRecentlyPlayed());
+                sendRequest("http://127.0.0.1:5000/play-song", "POST", { 
+                    uri: currentPlaylist[index].uri,
+                    context_uri: targetPlaylistUri
+                })
+                .then(() => updateRecentlyPlayed());
             }
         }
     
-      function updateRecentlyPlayed() {
+        function updateRecentlyPlayed() {
             fetch("http://127.0.0.1:5000/recently-played", { method: "GET" })
             .then(response => response.json())
             .then(data => {
@@ -261,28 +395,29 @@
             })
             .catch(error => console.error("Error:", error));
         }
-    let totalDuration = 0; // Store song duration in milliseconds
 
-function updateProgress() {
-    fetch("http://127.0.0.1:5000/music-progress", { method: "GET" })
-    .then(response => response.json())
-    .then(data => {
-        if (data.progress !== undefined && data.duration !== undefined) {
-            let progressBar = document.getElementById("progressBar");
-            let currentTime = document.getElementById("currentTime");
-            let totalTime = document.getElementById("totalTime");
+        let totalDuration = 0; // Store song duration in milliseconds
 
-            totalDuration = data.duration; // Store total duration
+        function updateProgress() {
+            fetch("http://127.0.0.1:5000/music-progress", { method: "GET" })
+            .then(response => response.json())
+            .then(data => {
+                if (data.progress !== undefined && data.duration !== undefined) {
+                    let progressBar = document.getElementById("progressBar");
+                    let currentTime = document.getElementById("currentTime");
+                    let totalTime = document.getElementById("totalTime");
 
-            let progressPercent = (data.progress / data.duration) * 100;
-            progressBar.value = progressPercent;
+                    totalDuration = data.duration; // Store total duration
 
-            currentTime.textContent = formatTime(data.progress);
-            totalTime.textContent = formatTime(data.duration);
+                    let progressPercent = (data.progress / data.duration) * 100;
+                    progressBar.value = progressPercent;
+
+                    currentTime.textContent = formatTime(data.progress);
+                    totalTime.textContent = formatTime(data.duration);
+                }
+            })
+            .catch(error => console.error("Error:", error));
         }
-    })
-    .catch(error => console.error("Error:", error));
-}
 
 function formatTime(ms) {
     let seconds = Math.floor(ms / 1000);

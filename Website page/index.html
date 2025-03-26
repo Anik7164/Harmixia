@@ -68,7 +68,7 @@
 <div>
     <label for="progressBar"></label>
     <input type="range" id="progressBar" min="0" max="100" value="0" style="
-    width: 260px;">
+    width: 350px;">
 <span id="currentTime">0:00</span> / <span id="totalTime">0:00</span>
 </div>
     <div class="mt-auto p-4 bg-gray-800 flex items-center justify-around">
@@ -128,30 +128,10 @@
     <div id="results" class="search-results"></div>
 
     <!-- Rising Artists -->
-    <div id="rising-artists" class="mb-4">
-        <h2 class="text-xl font-bold">Rising Artists</h2>
-        <div class="flex mt-2 space-x-4 overflow-x-auto">
-            <div class="text-center">
-                <img alt="Artist Aimer" class="w-24 h-24 rounded-full" height="100"
-                     src="https://storage.googleapis.com/a1aa/image/7qOwGMZakNZMwRhrxBb7pCS27gv-baMtttFS-H4CTZQ.jpg"
-                     width="100"/>
-                <p class="mt-2">Aimer</p>
-            </div>
-            <div class="text-center">
-                <img alt="Artist Upodnisha" class="w-24 h-24 rounded-full" height="100"
-                     src="https://storage.googleapis.com/a1aa/image/uoPPzu3aCMHk2W7QzRWL0vEyzqsx9030WALem-GjPZY.jpg"
-                     width="100"/>
-                <p class="mt-2">Upodnisha</p>
-            </div>
-            <div class="text-center">
-                <img alt="Artist Vibe" class="w-24 h-24 rounded-full" height="100"
-                     src="https://storage.googleapis.com/a1aa/image/uvW-o1Ga_ybN_rgulVxh33KRbJlRQVmpiAj_zx2uNAQ.jpg"
-                     width="100"/>
-                <p class="mt-2">Vibe</p>
-            </div>
-        </div>
+    <div class="w-full md:w-1/4 bg-gray-900 p-4" bis_skin_checked="1" style="width: 832px;height: 532px;"><h2 class="text-xl font-bold">Recently Played</h2>
+        <div id="recentlyPlayed" bis_skin_checked="1" style="height: 500px;width: 800px;"></div>
     </div>
-
+    
     <!-- Top Songs -->
     <div id="top-songs">
         <h2 class="text-xl font-bold">Top Songs</h2>
@@ -220,19 +200,21 @@
     }
 
     function fetchCurrentSong() {
-        fetch("http://127.0.0.1:5000/current-song", { method: "GET" })
-        .then(response => response.json())
-        .then(data => {
-            if (data.error) {
-                document.getElementById("currentSong").textContent = "Not playing";
-                document.getElementById("albumArt").src = "";
-            } else {
-                document.getElementById("currentSong").textContent = `${data.name} - ${data.artist}`;
-                document.getElementById("albumArt").src = data.image;
-            }
-        })
-        .catch(error => console.error("Error:", error));
-    }
+            fetch("http://127.0.0.1:5000/current-song", { method: "GET" })
+            .then(response => response.json())
+            .then(data => {
+                if (data.error) {
+                    document.getElementById("currentSong").textContent = "Not playing";
+                    document.getElementById("albumArt").src = "";
+                } else {
+                    document.getElementById("currentSong").textContent = `${data.name} - ${data.artist}`;
+                    document.getElementById("albumArt").src = data.image;
+                    // Automatically update recently played when a new song is detected
+                    updateRecentlyPlayed();
+                }
+            })
+            .catch(error => console.error("Error:", error));
+        }
 </script>
 <script>
      function showPlaylist(songs) {
@@ -250,11 +232,35 @@
     }
 
     function playSong(index) {
-        if (index >= 0 && index < currentPlaylist.length) {
-            currentIndex = index; // Update index when a song is selected
-            sendRequest("http://127.0.0.1:5000/play-song", "POST", { uri: currentPlaylist[index].uri });
+            if (index >= 0 && index < currentPlaylist.length) {
+                currentIndex = index; // Update index when a song is selected
+                sendRequest("http://127.0.0.1:5000/play-song", "POST", { uri: currentPlaylist[index].uri })
+                    .then(() => updateRecentlyPlayed());
+            }
         }
-    }
+    
+      function updateRecentlyPlayed() {
+            fetch("http://127.0.0.1:5000/recently-played", { method: "GET" })
+            .then(response => response.json())
+            .then(data => {
+                if (data.recently_played) {
+                    const recentlyPlayedEl = document.getElementById("recentlyPlayed");
+                    recentlyPlayedEl.innerHTML = ""; // Clear previous content
+
+                    data.recently_played.forEach((song, index) => {
+                        const div = document.createElement("div");
+                        div.textContent = `${index + 1}. ${song.name} - ${song.artist}`;
+                        div.style.cursor = "pointer";
+                        div.style.padding = "5px";
+                        div.style.borderBottom = "1px solid #eee";
+                        div.onclick = () => playSongByUri(song.uri);
+                        
+                        recentlyPlayedEl.appendChild(div);
+                    });
+                }
+            })
+            .catch(error => console.error("Error:", error));
+        }
     let totalDuration = 0; // Store song duration in milliseconds
 
 function updateProgress() {
@@ -284,6 +290,10 @@ function formatTime(ms) {
     seconds %= 60;
     return `${minutes}:${seconds.toString().padStart(2, "0")}`;
 }
+function playSongByUri(uri) {
+            sendRequest("http://127.0.0.1:5000/play-song", "POST", { uri: uri })
+                .then(() => updateRecentlyPlayed());
+        }
 
 document.getElementById("progressBar").addEventListener("change", function(event) {
     if (totalDuration > 0) {
@@ -301,6 +311,8 @@ setInterval(updateProgress, 1000); // Update progress every second
     setInterval(fetchCurrentSong, 1000);
     document.getElementById("refreshSongButton").addEventListener("click", fetchCurrentSong);
     fetchCurrentSong(); // Fetch song on page load
+    updateRecentlyPlayed();
+    
 </script>
 <script>
    document.getElementById("playButton").addEventListener("click", function() {
@@ -312,16 +324,22 @@ setInterval(updateProgress, 1000); // Update progress every second
     });
 
     document.getElementById("nextButton").addEventListener("click", function() {
-        if (currentIndex + 1 < currentPlaylist.length) {
-            playSong(currentIndex + 1);  // Move to the next song
-        }
-    });
+            if (currentIndex + 1 < currentPlaylist.length) {
+                playSong(currentIndex + 1);  // Move to the next song
+            } else {
+                sendRequest("http://127.0.0.1:5000/next")
+                    .then(() => updateRecentlyPlayed());
+            }
+        });
 
     document.getElementById("prevButton").addEventListener("click", function() {
-        if (currentIndex - 1 >= 0) {
-            playSong(currentIndex - 1);  // Move to the previous song
-        }
-    });
+            if (currentIndex - 1 >= 0) {
+                playSong(currentIndex - 1);  // Move to the previous song
+            } else {
+                sendRequest("http://127.0.0.1:5000/previous")
+                    .then(() => updateRecentlyPlayed());
+            }
+        });
 
     document.getElementById("fetchPlaylistButton").addEventListener("click", function() {
         sendRequest("http://127.0.0.1:5000/current-playlist", "GET");

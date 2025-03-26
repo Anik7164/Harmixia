@@ -26,7 +26,7 @@ LIKED_SONGS_PLAYLIST_ID = "spotify:playlist:37i9dQZF1DXcBWIGoYBM5M"  # Spotify's
 
 MAX_RECENT_SONGS = 500
 RECENT_SONGS_FILE = "recent_songs.json"
-REQUEST_LIMIT_SECONDS = 2  # 5 second request limit
+REQUEST_LIMIT_SECONDS = 5  # 5 second request limit
 
 # Initialize Spotify client
 sp = spotipy.Spotify(auth_manager=SpotifyOAuth(

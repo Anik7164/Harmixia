@@ -210,7 +210,7 @@
                     document.getElementById("currentSong").textContent = `${data.name} - ${data.artist}`;
                     document.getElementById("albumArt").src = data.image;
                     // Automatically update recently played when a new song is detected
-                    setInterval(updateRecentlyPlayed, 50000);
+                
                 }
             })
             .catch(error => console.error("Error:", error));
@@ -259,13 +259,9 @@
             });
         }
         
-        // Schedule the next refresh after 5 seconds
-       setTimeout(updateRecentlyPlayed, 20000);
     })
     .catch(error => {
         console.error("Error:", error);
-        // Retry after 5 seconds even if there's an error
-       setTimeout(updateRecentlyPlayed, 20000);
     });
 }
 // Initial call
@@ -346,7 +342,7 @@ setInterval(updateProgress, 2000); // Update progress every second
                 playSong(currentIndex - 1);  // Move to the previous song
             } else {
                 sendRequest("http://127.0.0.1:5000/previous")
-                    .then(() => setInterval(updateRecentlyPlayed, 50000));
+                   
             }
         });
 

@@ -7,10 +7,10 @@ from spotify_auth import sp
 face_cascade = cv2.CascadeClassifier(cv2.data.haarcascades + 'haarcascade_frontalface_default.xml')
 
 emotion_playlist = {
-    "happy": "spotify:playlist:0aX9sMCpue9ZFnKcoErL7d",
-    "sad": "spotify:playlist:37i9dQZF1DX3YSRoSdA634",
-    "angry": "spotify:playlist:1mulv2QJmZQZik4tYR8V0j",
-    "neutral": "spotify:playlist:1mulv2QJmZQZik4tYR8V0j"
+    "happy": "spotify:playlist:1AJZcd3ZlMhq2DBYVI8z7a",
+    "sad": "spotify:playlist:6RugFKjNj9dIGlFhHrZjvD",
+    "angry": "spotify:playlist:08Kr4pW2Cgmb7F0bBRZn1Z",
+    "neutral": "spotify:playlist:7crckZBjA169XB6W1dFKSh"
 }
 
 def get_active_device():

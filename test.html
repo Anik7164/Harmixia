@@ -239,28 +239,38 @@
             }
         }
     
-      function updateRecentlyPlayed() {
-            fetch("http://127.0.0.1:5000/recently-played", { method: "GET" })
-            .then(response => response.json())
-            .then(data => {
-                if (data.recently_played) {
-                    const recentlyPlayedEl = document.getElementById("recentlyPlayed");
-                    recentlyPlayedEl.innerHTML = ""; // Clear previous content
+        function updateRecentlyPlayed() {
+    fetch("http://127.0.0.1:5000/recently-played", { method: "GET" })
+    .then(response => response.json())
+    .then(data => {
+        if (data.recently_played) {
+            const recentlyPlayedEl = document.getElementById("recentlyPlayed");
+            recentlyPlayedEl.innerHTML = ""; // Clear previous content
 
-                    data.recently_played.forEach((song, index) => {
-                        const div = document.createElement("div");
-                        div.textContent = `${index + 1}. ${song.name} - ${song.artist}`;
-                        div.style.cursor = "pointer";
-                        div.style.padding = "5px";
-                        div.style.borderBottom = "1px solid #eee";
-                        div.onclick = () => playSongByUri(song.uri);
-                        
-                        recentlyPlayedEl.appendChild(div);
-                    });
-                }
-            })
-            .catch(error => console.error("Error:", error));
+            data.recently_played.forEach((song, index) => {
+                const div = document.createElement("div");
+                div.textContent = `${index + 1}. ${song.name} - ${song.artist}`;
+                div.style.cursor = "pointer";
+                div.style.padding = "5px";
+                div.style.borderBottom = "1px solid #eee";
+                div.onclick = () => playSongByUri(song.uri);
+                
+                recentlyPlayedEl.appendChild(div);
+            });
         }
+        
+        // Schedule the next refresh after 5 seconds
+      //  setTimeout(updateRecentlyPlayed, 10000);
+    })
+    .catch(error => {
+        console.error("Error:", error);
+        // Retry after 5 seconds even if there's an error
+      //  setTimeout(updateRecentlyPlayed, 10000);
+    });
+}
+
+// Initial call
+updateRecentlyPlayed();
     let totalDuration = 0; // Store song duration in milliseconds
 
 function updateProgress() {

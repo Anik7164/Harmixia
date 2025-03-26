@@ -210,7 +210,7 @@
                     document.getElementById("currentSong").textContent = `${data.name} - ${data.artist}`;
                     document.getElementById("albumArt").src = data.image;
                     // Automatically update recently played when a new song is detected
-                    updateRecentlyPlayed();
+                    setInterval(updateRecentlyPlayed, 50000);
                 }
             })
             .catch(error => console.error("Error:", error));
@@ -235,7 +235,7 @@
             if (index >= 0 && index < currentPlaylist.length) {
                 currentIndex = index; // Update index when a song is selected
                 sendRequest("http://127.0.0.1:5000/play-song", "POST", { uri: currentPlaylist[index].uri })
-                    .then(() => updateRecentlyPlayed());
+                    .then(() => setInterval(updateRecentlyPlayed, 50000));
             }
         }
     
@@ -260,17 +260,16 @@
         }
         
         // Schedule the next refresh after 5 seconds
-      //  setTimeout(updateRecentlyPlayed, 10000);
+       setTimeout(updateRecentlyPlayed, 20000);
     })
     .catch(error => {
         console.error("Error:", error);
         // Retry after 5 seconds even if there's an error
-      //  setTimeout(updateRecentlyPlayed, 10000);
+       setTimeout(updateRecentlyPlayed, 20000);
     });
 }
-
 // Initial call
-updateRecentlyPlayed();
+
     let totalDuration = 0; // Store song duration in milliseconds
 
 function updateProgress() {
@@ -302,7 +301,7 @@ function formatTime(ms) {
 }
 function playSongByUri(uri) {
             sendRequest("http://127.0.0.1:5000/play-song", "POST", { uri: uri })
-                .then(() => updateRecentlyPlayed());
+                .then(() => setInterval(updateRecentlyPlayed, 50000));
         }
 
 document.getElementById("progressBar").addEventListener("change", function(event) {
@@ -316,12 +315,12 @@ document.getElementById("progressBar").addEventListener("change", function(event
         }).catch(error => console.error("Error:", error));
     }
 });
-setInterval(updateProgress, 1000); // Update progress every second
+setInterval(updateProgress, 2000); // Update progress every second
     // Auto-refresh currently playing song every 10 seconds
-    setInterval(fetchCurrentSong, 1000);
+    setInterval(fetchCurrentSong, 5000);
     document.getElementById("refreshSongButton").addEventListener("click", fetchCurrentSong);
     fetchCurrentSong(); // Fetch song on page load
-    updateRecentlyPlayed();
+    setInterval(updateRecentlyPlayed, 50000)
     
 </script>
 <script>
@@ -338,7 +337,7 @@ setInterval(updateProgress, 1000); // Update progress every second
                 playSong(currentIndex + 1);  // Move to the next song
             } else {
                 sendRequest("http://127.0.0.1:5000/next")
-                    .then(() => updateRecentlyPlayed());
+                    .then(() => setInterval(updateRecentlyPlayed, 50000));
             }
         });
 
@@ -347,7 +346,7 @@ setInterval(updateProgress, 1000); // Update progress every second
                 playSong(currentIndex - 1);  // Move to the previous song
             } else {
                 sendRequest("http://127.0.0.1:5000/previous")
-                    .then(() => updateRecentlyPlayed());
+                    .then(() => setInterval(updateRecentlyPlayed, 50000));
             }
         });
 

@@ -10,7 +10,7 @@ emotion_playlist = {
     "happy": "spotify:playlist:0aX9sMCpue9ZFnKcoErL7d",
     "sad": "spotify:playlist:37i9dQZF1DX3YSRoSdA634",
     "angry": "spotify:playlist:1mulv2QJmZQZik4tYR8V0j",
-    "neutral": "spotify:playlist:0aX9sMCpue9ZFnKcoErL7d"
+    "neutral": "spotify:playlist:1mulv2QJmZQZik4tYR8V0j"
 }
 
 def get_active_device():

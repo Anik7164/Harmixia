@@ -1,7 +1,5 @@
 import os
 import subprocess
-import time
-import threading
 from flask import Flask, request, jsonify
 from flask_cors import CORS
 import spotipy
@@ -11,15 +9,12 @@ from datetime import datetime
 app = Flask(__name__)
 CORS(app)
 
-# Spotify API credentials
 SPOTIPY_CLIENT_ID = "c598dbc98954494389fb6a89de9ff6a3"
 SPOTIPY_CLIENT_SECRET = "03746c236aa24f09a284525311dc4a8d"
-SPOTIPY_REDIRECT_URI = "http://localhost:8888/callback"
-HISTORY_PLAYLIST_ID = "2RVYDBfV3nu98qEb8ocPLA"
-HISTORY_PLAYLIST_URI = f"spotify:playlist:{HISTORY_PLAYLIST_ID}"
-MAX_RECENT_SONGS = 500
+SPOTIPY_REDIRECT_URI = "http://localhost:3000/callback"
 
-# Initialize Spotify client
+
+# Updated scope with all required permissions
 sp = spotipy.Spotify(auth_manager=SpotifyOAuth(
     client_id=SPOTIPY_CLIENT_ID,
     client_secret=SPOTIPY_CLIENT_SECRET,
@@ -31,35 +26,15 @@ sp = spotipy.Spotify(auth_manager=SpotifyOAuth(
 recently_played_songs = []
 
 def get_active_device():
-    """Get the first active device"""
-    try:
-        devices = sp.devices()
-        if not devices['devices']:
-            return None
-        return devices['devices'][0]['id']
-    except Exception as e:
-        print(f"Error getting active device: {str(e)}")
+    devices = sp.devices()
+    if not devices['devices']:
         return None
-
-def add_to_history_playlist(track_uri):
-    """Add a track to the history playlist if not already present"""
-    try:
-        # Check if the song is already in the playlist
-        playlist_tracks = sp.playlist_tracks(HISTORY_PLAYLIST_ID, fields="items.track.uri")
-        existing_uris = [item['track']['uri'] for item in playlist_tracks['items']]
-        
-        if track_uri not in existing_uris:
-            sp.playlist_add_items(HISTORY_PLAYLIST_ID, [track_uri])
-            return True
-        return False
-    except Exception as e:
-        print(f"Error adding to history playlist: {str(e)}")
-        return False
+    return devices['devices'][0]['id']
 
 def update_recently_played():
-    """Update the list of recently played songs and add to history playlist"""
     global recently_played_songs
     try:
+        # Get the current playback
         current_playback = sp.current_playback()
         if current_playback and current_playback.get("item"):
             current_track = current_playback["item"]
@@ -74,62 +49,17 @@ def update_recently_played():
             # Check if the song is already in the list
             if not any(song['uri'] == new_song['uri'] for song in recently_played_songs):
                 recently_played_songs.insert(0, new_song)
-                if len(recently_played_songs) > MAX_RECENT_SONGS:
-                    recently_played_songs = recently_played_songs[:MAX_RECENT_SONGS]
-                
-                add_to_history_playlist(current_track["uri"])
+                # Keep only the last 10 songs
+                if len(recently_played_songs) > 10:
+                    recently_played_songs = recently_played_songs[:10]
     except Exception as e:
         print(f"Error updating recently played: {str(e)}")
-
-def check_and_rotate_playlist():
-    """Check if we need to rotate back to the start of the playlist"""
-    try:
-        playback = sp.current_playback()
-        if playback and playback.get('context') and playback['context']['type'] == 'playlist':
-            playlist_uri = playback['context']['uri']
-            playlist_id = playlist_uri.split(':')[-1]
-            
-            results = sp.playlist_tracks(playlist_id)
-            tracks = results['items']
-            while results['next']:
-                results = sp.next(results)
-                tracks.extend(results['items'])
-            
-            progress = playback.get('progress_ms', 0)
-            duration = playback['item']['duration_ms'] if playback.get('item') else 0
-            time_remaining = duration - progress
-            
-            if time_remaining < 5000 and playback.get('item'):
-                current_uri = playback['item']['uri']
-                current_index = next((i for i, item in enumerate(tracks) 
-                                    if item['track']['uri'] == current_uri), -1)
-                
-                if current_index == len(tracks) - 1:
-                    device_id = get_active_device()
-                    if device_id:
-                        sp.start_playback(
-                            device_id=device_id,
-                            context_uri=playlist_uri,
-                            offset={"position": 0}
-                        )
-    except Exception as e:
-        print(f"Error checking playlist rotation: {str(e)}")
-
-def start_rotation_checker():
-    """Background thread for checking playlist rotation"""
-    while True:
-        check_and_rotate_playlist()
-        time.sleep(3)
-
-# Start the rotation checker thread
-rotation_thread = threading.Thread(target=start_rotation_checker)
-rotation_thread.daemon = True
-rotation_thread.start()
 
 @app.route('/start-scanning', methods=['POST'])
 def start_scanning():
     try:
         script_path = os.path.abspath("emotion_spotify.py")
+
         if not os.path.exists(script_path):
             return jsonify({"error": f"File not found at {script_path}"}), 500
 
@@ -175,36 +105,7 @@ def next_song():
         if not device_id:
             return jsonify({"error": "No active device found. Open Spotify on a device."}), 400
 
-        current = sp.current_playback()
-        if current and current.get('context') and current['context']['type'] == 'playlist':
-            try:
-                playlist_uri = current['context']['uri']
-                playlist_id = playlist_uri.split(':')[-1]
-                
-                results = sp.playlist_tracks(playlist_id)
-                tracks = results['items']
-                while results['next']:
-                    results = sp.next(results)
-                    tracks.extend(results['items'])
-                
-                current_uri = current['item']['uri']
-                current_index = next((i for i, item in enumerate(tracks) 
-                                    if item['track']['uri'] == current_uri), -1)
-                
-                if current_index == len(tracks) - 1:
-                    sp.start_playback(
-                        device_id=device_id,
-                        context_uri=playlist_uri,
-                        offset={"position": 0}
-                    )
-                else:
-                    sp.next_track(device_id=device_id)
-            except Exception as e:
-                print(f"Error handling playlist rotation: {str(e)}")
-                sp.next_track(device_id=device_id)
-        else:
-            sp.next_track(device_id=device_id)
-        
+        sp.next_track(device_id=device_id)
         update_recently_played()
         return jsonify({"message": "Skipped to next track"}), 200
     except Exception as e:
@@ -217,12 +118,7 @@ def previous_song():
         if not device_id:
             return jsonify({"error": "No active device found. Open Spotify on a device."}), 400
 
-        current = sp.current_playback()
-        if current and current.get('context') and current['context']['uri'] == HISTORY_PLAYLIST_URI:
-            sp.previous_track(device_id=device_id)
-        else:
-            sp.previous_track(device_id=device_id)
-        
+        sp.previous_track(device_id=device_id)
         update_recently_played()
         return jsonify({"message": "Went back to previous track"}), 200
     except Exception as e:
@@ -262,7 +158,6 @@ def play_selected_song():
     try:
         data = request.get_json()
         song_uri = data.get("uri")
-        context_uri = data.get("context_uri", HISTORY_PLAYLIST_URI)
 
         if not song_uri:
             return jsonify({"error": "No song URI provided"}), 400
@@ -271,29 +166,116 @@ def play_selected_song():
         if not device_id:
             return jsonify({"error": "No active device found. Open Spotify on a device."}), 400
 
-        if 'playlist' in context_uri:
-            add_to_history_playlist(song_uri)
-            
-            results = sp.playlist_tracks(HISTORY_PLAYLIST_ID)
-            track_uris = [item['track']['uri'] for item in results['items']]
-            while results['next']:
-                results = sp.next(results)
-                track_uris.extend([item['track']['uri'] for item in results['items']])
-            
-            try:
-                offset = track_uris.index(song_uri)
-                sp.start_playback(
-                    device_id=device_id,
-                    context_uri=context_uri,
-                    offset={"position": offset}
-                )
-            except ValueError:
-                sp.start_playback(device_id=device_id, uris=[song_uri])
-        else:
-            sp.start_playback(device_id=device_id, uris=[song_uri])
-        
+        sp.start_playback(device_id=device_id, uris=[song_uri])
         update_recently_played()
         return jsonify({"message": "Song playing"}), 200
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
+@app.route('/volume-up', methods=['POST'])
+def volume_up():
+    try:
+        device_id = get_active_device()
+        if not device_id:
+            return jsonify({"error": "No active device found. Open Spotify on a device."}), 400
+
+        current_volume = sp.current_playback().get("device", {}).get("volume_percent", 50)
+        new_volume = min(current_volume + 10, 100)
+
+        sp.volume(new_volume, device_id=device_id)
+        return jsonify({"message": f"Volume increased to {new_volume}%"}), 200
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
+@app.route('/volume-down', methods=['POST'])
+def volume_down():
+    try:
+        device_id = get_active_device()
+        if not device_id:
+            return jsonify({"error": "No active device found. Open Spotify on a device."}), 400
+
+        current_volume = sp.current_playback().get("device", {}).get("volume_percent", 50)
+        new_volume = max(current_volume - 10, 0)
+
+        sp.volume(new_volume, device_id=device_id)
+        return jsonify({"message": f"Volume decreased to {new_volume}%"}), 200
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+    
+@app.route('/current-song', methods=['GET'])
+def current_song():
+    try:
+        current_track = sp.current_playback()
+        if not current_track or not current_track.get("item"):
+            return jsonify({"error": "No song currently playing"}), 400
+
+        track = current_track["item"]
+        song_data = {
+            "name": track["name"],
+            "artist": track["artists"][0]["name"],
+            "album": track["album"]["name"],
+            "image": track["album"]["images"][0]["url"] if track["album"]["images"] else "",
+            "uri": track["uri"]
+        }
+        return jsonify(song_data), 200
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
+@app.route('/music-progress', methods=['GET'])
+def get_music_progress():
+    try:
+        current_playback = sp.current_playback()
+        if not current_playback or not current_playback.get("item"):
+            return jsonify({"error": "No song currently playing"}), 400
+
+        return jsonify({
+            "progress": current_playback["progress_ms"],
+            "duration": current_playback["item"]["duration_ms"]
+        }), 200
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
+@app.route('/seek', methods=['POST'])
+def seek():
+    try:
+        data = request.get_json()
+        position_ms = data.get("position_ms")
+
+        if position_ms is None:
+            return jsonify({"error": "No position provided"}), 400
+
+        device_id = get_active_device()
+        if not device_id:
+            return jsonify({"error": "No active device found. Open Spotify on a device."}), 400
+
+        sp.seek_track(position_ms, device_id=device_id)
+        return jsonify({"message": f"Seeked to {position_ms} ms"}), 200
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
+@app.route('/recently-played', methods=['GET'])
+def get_recently_played():
+    try:
+        # Return both Spotify's recently played and our local tracking
+        spotify_recent = sp.current_user_recently_played(limit=10)
+        combined = recently_played_songs.copy()
+
+        # Add Spotify's recently played if not already in our list
+        for item in spotify_recent["items"]:
+            track = item["track"]
+            song = {
+                "name": track["name"],
+                "artist": track["artists"][0]["name"],
+                "album": track["album"]["name"],
+                "played_at": item["played_at"],
+                "uri": track["uri"]
+            }
+            if not any(s['uri'] == song['uri'] for s in combined):
+                combined.append(song)
+
+        # Ensure we only return up to 10 items
+        combined = combined[:10]
+        return jsonify({"recently_played": combined}), 200
     except Exception as e:
         return jsonify({"error": str(e)}), 500
 
@@ -310,145 +292,87 @@ def play_recent_song():
         if not device_id:
             return jsonify({"error": "No active device found. Open Spotify on a device."}), 400
 
-        results = sp.playlist_tracks(HISTORY_PLAYLIST_ID)
-        track_uris = [item['track']['uri'] for item in results['items']]
-        while results['next']:
-            results = sp.next(results)
-            track_uris.extend([item['track']['uri'] for item in results['items']])
-        
-        try:
-            offset = track_uris.index(song_uri)
-        except ValueError:
-            add_to_history_playlist(song_uri)
-            results = sp.playlist_tracks(HISTORY_PLAYLIST_ID)
-            track_uris = [item['track']['uri'] for item in results['items']]
-            offset = track_uris.index(song_uri)
-
-        sp.start_playback(
-            device_id=device_id,
-            context_uri=HISTORY_PLAYLIST_URI,
-            offset={"position": offset}
-        )
-        
+        sp.start_playback(device_id=device_id, uris=[song_uri])
         update_recently_played()
-        return jsonify({"message": "Playing from history playlist"}), 200
+        return jsonify({"message": "Playing recently played song"}), 200
     except Exception as e:
         return jsonify({"error": str(e)}), 500
 
-@app.route('/current-song', methods=['GET'])
-def get_current_song():
-    try:
-        current_playback = sp.current_playback()
-        if not current_playback or not current_playback.get("item"):
-            return jsonify({"error": "No song currently playing"}), 200
-
-        current_track = current_playback["item"]
-        return jsonify({
-            "name": current_track["name"],
-            "artist": current_track["artists"][0]["name"],
-            "image": current_track["album"]["images"][0]["url"] if current_track["album"]["images"] else "",
-            "uri": current_track["uri"]
-        }), 200
-    except Exception as e:
-        return jsonify({"error": str(e)}), 500
-
-@app.route('/recently-played', methods=['GET'])
-def get_recently_played():
-    try:
-        # Get the last 50 tracks from Spotify's recently played
-        results = sp.current_user_recently_played(limit=50)
-        recent_tracks = []
-        
-        for item in results['items']:
-            track = item['track']
-            recent_tracks.append({
-                "name": track["name"],
-                "artist": track["artists"][0]["name"],
-                "uri": track["uri"],
-                "played_at": item["played_at"]
-            })
-        
-        # Combine with our locally tracked recently played songs
-        global recently_played_songs
-        combined = recently_played_songs.copy()
-        
-        # Add Spotify's recently played that aren't already in our list
-        for track in recent_tracks:
-            if not any(s['uri'] == track['uri'] for s in combined):
-                combined.append({
-                    "name": track["name"],
-                    "artist": track["artist"],
-                    "uri": track["uri"],
-                    "played_at": track["played_at"]
-                })
-        
-        # Sort by play time (newest first)
-        combined.sort(key=lambda x: x.get("played_at", ""), reverse=True)
-        
-        # Return only the most recent ones
-        return jsonify({
-            "recently_played": combined[:50]
-        }), 200
-    except Exception as e:
-        return jsonify({"error": str(e)}), 500
-
-@app.route('/volume-up', methods=['POST'])
-def volume_up():
-    try:
-        device_id = get_active_device()
-        if not device_id:
-            return jsonify({"error": "No active device found"}), 400
-            
-        current_volume = sp.current_playback().get('device', {}).get('volume_percent', 50)
-        new_volume = min(current_volume + 10, 100)
-        sp.volume(new_volume, device_id=device_id)
-        return jsonify({"message": f"Volume increased to {new_volume}"}), 200
-    except Exception as e:
-        return jsonify({"error": str(e)}), 500
-
-@app.route('/volume-down', methods=['POST'])
-def volume_down():
-    try:
-        device_id = get_active_device()
-        if not device_id:
-            return jsonify({"error": "No active device found"}), 400
-            
-        current_volume = sp.current_playback().get('device', {}).get('volume_percent', 50)
-        new_volume = max(current_volume - 10, 0)
-        sp.volume(new_volume, device_id=device_id)
-        return jsonify({"message": f"Volume decreased to {new_volume}"}), 200
-    except Exception as e:
-        return jsonify({"error": str(e)}), 500
-
-@app.route('/music-progress', methods=['GET'])
-def get_music_progress():
-    try:
-        current_playback = sp.current_playback()
-        if not current_playback or not current_playback.get("item"):
-            return jsonify({"error": "No song currently playing"}), 200
-
-        return jsonify({
-            "progress": current_playback.get("progress_ms", 0),
-            "duration": current_playback["item"]["duration_ms"]
-        }), 200
-    except Exception as e:
-        return jsonify({"error": str(e)}), 500
-
-@app.route('/seek', methods=['POST'])
-def seek_position():
+@app.route('/create-playlist', methods=['POST'])
+def create_playlist():
     try:
         data = request.get_json()
-        position_ms = data.get("position_ms")
+        playlist_name = data.get('name', f"My Playlist {datetime.now().strftime('%Y-%m-%d')}")
+        song_uris = data.get('song_uris', [])
         
-        if position_ms is None:
-            return jsonify({"error": "No position provided"}), 400
-            
-        device_id = get_active_device()
-        if not device_id:
-            return jsonify({"error": "No active device found"}), 400
-            
-        sp.seek_track(position_ms, device_id=device_id)
-        return jsonify({"message": f"Seeked to {position_ms}ms"}), 200
+        user_id = sp.current_user()['id']
+        
+        playlist = sp.user_playlist_create(
+            user=user_id,
+            name=playlist_name,
+            public=True,
+            description="Automatically created playlist"
+        )
+        
+        if song_uris:
+            sp.playlist_add_items(playlist['id'], song_uris)
+        
+        return jsonify({
+            "message": "Playlist created successfully",
+            "playlist": {
+                "id": playlist['id'],
+                "name": playlist['name'],
+                "uri": playlist['uri']
+            }
+        }), 200
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
+@app.route('/like-song', methods=['POST'])
+def like_song():
+    try:
+        data = request.get_json()
+        song_uri = data.get('uri')
+        
+        if not song_uri:
+            return jsonify({"error": "No song URI provided"}), 400
+        
+        sp.current_user_saved_tracks_add([song_uri])
+        
+        return jsonify({"message": "Song added to liked songs"}), 200
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
+@app.route('/create-playlist-from-liked', methods=['POST'])
+def create_playlist_from_liked():
+    try:
+        data = request.get_json()
+        playlist_name = data.get('name', f"Liked Songs {datetime.now().strftime('%Y-%m-%d')}")
+        
+        user_id = sp.current_user()['id']
+        
+        liked_songs = sp.current_user_saved_tracks(limit=50)
+        song_uris = [item['track']['uri'] for item in liked_songs['items']]
+        
+        playlist = sp.user_playlist_create(
+            user=user_id,
+            name=playlist_name,
+            public=True,
+            description="Playlist created from liked songs"
+        )
+        
+        if song_uris:
+            sp.playlist_add_items(playlist['id'], song_uris)
+        
+        return jsonify({
+            "message": "Playlist created from liked songs",
+            "playlist": {
+                "id": playlist['id'],
+                "name": playlist['name'],
+                "uri": playlist['uri'],
+                "track_count": len(song_uris)
+            }
+        }), 200
     except Exception as e:
         return jsonify({"error": str(e)}), 500
 

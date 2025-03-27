@@ -64,15 +64,14 @@
 <div class="flex-1 bg-gray-900 p-4 ">
     <!-- Header -->
     <div class="flex justify-between items-center mb-4">
-        <div class="flex items-center space-x-2">
-            <button id="camera-button" class="text-white text-xl focus:outline-none">
+        <div class="flex items-center space-x-2" bis_skin_checked="1" style="border-left-width: 400px; border-color: rgb(17 24 39 / var(--tw-bg-opacity, 1));"> 
+            <button id="camera-button" class="text-white text-xl focus:outline-none" style="
+            width: 100px;
+        ">
                 <p id="status"></p>
                 <i class="fas fa-camera"></i>
             </button>
-            <input id="search-input" class="bg-gray-800 text-white p-2 rounded w-1/2" placeholder="Search..." type="text"/>
-            <button id="search-button" class="text-white text-xl focus:outline-none">
-                <i class="fas fa-search text-xl"></i>
-            </button>
+            
         </div>
         <div class="flex items-center">
             <span class="mr-2 cursor-pointer" onclick="openModal()">Login</span>
@@ -80,10 +79,8 @@
         </div>
     </div>
 
-    <!-- Search Results -->
-    <div id="results" class="search-results"></div>
 
-    <!-- Rising Artists -->
+    <!-- Recentplay -->
     <div class="w-full md:w-1/4 bg-gray-900 p-4" bis_skin_checked="1" style="width: 832px;height: 532px;"><h2 class="text-xl font-bold">Recently Played</h2>
         <div id="recentlyPlayed" bis_skin_checked="1" style="height: 500px;width: 800px;"></div>
     </div>
@@ -118,8 +115,10 @@
 </div>
 
 <!-- Now Playing -->
-<div class="w-full md:w-1/4 bg-gray-900 p-4">
-    <button id="fetchPlaylistButton">Show Playlist</button>
+<div class="w-full md:w-1/4 bg-900 p-4">
+    <button id="fetchPlaylistButton" style="
+    width: 100px;
+">Show Playlist</button>
     <p id="playlist"></p>
     <p id="status"></p>
 </div>
@@ -267,9 +266,9 @@ document.getElementById("progressBar").addEventListener("change", function(event
         }).catch(error => console.error("Error:", error));
     }
 });
-setInterval(updateProgress, 2000); // Update progress every second
+setInterval(updateProgress, 1000); // Update progress every second
     // Auto-refresh currently playing song every 10 seconds
-    setInterval(fetchCurrentSong, 5000);
+    setInterval(fetchCurrentSong, 2000);
     document.getElementById("refreshSongButton").addEventListener("click", fetchCurrentSong);
     fetchCurrentSong(); // Fetch song on page load
     setInterval(updateRecentlyPlayed, 20000)
@@ -354,7 +353,7 @@ setInterval(updateProgress, 2000); // Update progress every second
                     applyEmotionColor(data.emotion);
                 }
             });
-    }, 5000); // Check every 5 seconds
+    }, 1000); // Check every 5 seconds
 </script>
 
 <!-- Spotify Web Playback SDK -->

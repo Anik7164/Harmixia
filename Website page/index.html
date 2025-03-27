@@ -5,58 +5,15 @@
     <title>Harmixia</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.3/css/all.min.css" rel="stylesheet"/>
-    <style>
-        .modal {
-            display: none;
-            position: fixed;
-            z-index: 50;
-            left: 0;
-            top: 0;
-            width: 100%;
-            height: 100%;
-            overflow: auto;
-            background-color: rgba(0, 0, 0, 0.5);
-        }
-
-        .modal-content {
-            background-color: #1a1a1a;
-            margin: 15% auto;
-            padding: 20px;
-            border: 1px solid #888;
-            width: 80%;
-            max-width: 400px;
-            border-radius: 8px;
-            max-height: 80%;
-            overflow-y: auto;
-        }
-
-        .blur-background {
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            backdrop-filter: blur(10px);
-            z-index: 10;
-            display: none;
-        }
-
-        .search-results {
-            position: relative;
-            z-index: 20;
-            background-color: rgba(26, 26, 26, 0.8);
-            border-radius: 8px;
-            padding: 16px;
-            margin-top: 8px;
-        }
-    </style>
+    <link href="..\style.css" rel="stylesheet">
+    <link href="https://fonts.cdnfonts.com/css/circular-std" rel="stylesheet">
 </head>
 <body class="bg-black text-white h-screen flex flex-col md:flex-row">
 <!-- Blur Background -->
 <div id="blur-background" class="blur-background"></div>
 
 <!-- Sidebar -->
-<div class="w-full md:w-1/4 bg-gray-900 p-4 flex flex-col">
+<div class="w-full md:w-1/4 bg-900 p-4 flex flex-col">
     
     <div class="mt-auto p-4 bg-gray-800 flex items-center justify-around" bis_skin_checked="1">
         <img id="albumArt" src="" alt="Album Art" style="width: 350px;height: 420px;">
@@ -76,8 +33,7 @@
             <p id="status"></p>
             <i class="fas fa-backward"></i>
         </button>
-        <button class="text-white text-2xl focus:outline-none" id="playButton">
-            <p id="status"></p>
+        <button class="text-white text-2xl focus:outline-none" id="playButton" aria-label="Play">
             <i class="fas fa-play"></i>
         </button>
         <button class="text-white text-2xl focus:outline-none" id="pauseButton">
@@ -105,18 +61,17 @@
 </div>
 
 <!-- Main Content -->
-<div class="flex-1 p-4">
+<div class="flex-1 bg-gray-900 p-4 ">
     <!-- Header -->
     <div class="flex justify-between items-center mb-4">
-        <div class="flex items-center space-x-2">
-            <button id="camera-button" class="text-white text-xl focus:outline-none">
+        <div class="flex items-center space-x-2" bis_skin_checked="1" style="border-left-width: 400px; border-color: rgb(17 24 39 / var(--tw-bg-opacity, 1));"> 
+            <button id="camera-button" class="text-white text-xl focus:outline-none" style="
+            width: 100px;
+        ">
                 <p id="status"></p>
                 <i class="fas fa-camera"></i>
             </button>
-            <input id="search-input" class="bg-gray-800 text-white p-2 rounded w-1/2" placeholder="Search..." type="text"/>
-            <button id="search-button" class="text-white text-xl focus:outline-none">
-                <i class="fas fa-search text-xl"></i>
-            </button>
+            
         </div>
         <div class="flex items-center">
             <span class="mr-2 cursor-pointer" onclick="openModal()">Login</span>
@@ -124,10 +79,8 @@
         </div>
     </div>
 
-    <!-- Search Results -->
-    <div id="results" class="search-results"></div>
 
-    <!-- Rising Artists -->
+    <!-- Recentplay -->
     <div class="w-full md:w-1/4 bg-gray-900 p-4" bis_skin_checked="1" style="width: 832px;height: 532px;"><h2 class="text-xl font-bold">Recently Played</h2>
         <div id="recentlyPlayed" bis_skin_checked="1" style="height: 500px;width: 800px;"></div>
     </div>
@@ -162,8 +115,10 @@
 </div>
 
 <!-- Now Playing -->
-<div class="w-full md:w-1/4 bg-gray-900 p-4">
-    <button id="fetchPlaylistButton">Show Playlist</button>
+<div class="w-full md:w-1/4 bg-900 p-4">
+    <button id="fetchPlaylistButton" style="
+    width: 100px;
+">Show Playlist</button>
     <p id="playlist"></p>
     <p id="status"></p>
 </div>
@@ -210,7 +165,7 @@
                     document.getElementById("currentSong").textContent = `${data.name} - ${data.artist}`;
                     document.getElementById("albumArt").src = data.image;
                     // Automatically update recently played when a new song is detected
-                    updateRecentlyPlayed();
+                    setInterval(updateRecentlyPlayed, 20000)
                 }
             })
             .catch(error => console.error("Error:", error));
@@ -235,32 +190,37 @@
             if (index >= 0 && index < currentPlaylist.length) {
                 currentIndex = index; // Update index when a song is selected
                 sendRequest("http://127.0.0.1:5000/play-song", "POST", { uri: currentPlaylist[index].uri })
-                    .then(() => updateRecentlyPlayed());
+                    .then(() => setInterval(updateRecentlyPlayed, 20000));
             }
         }
     
-      function updateRecentlyPlayed() {
-            fetch("http://127.0.0.1:5000/recently-played", { method: "GET" })
-            .then(response => response.json())
-            .then(data => {
-                if (data.recently_played) {
-                    const recentlyPlayedEl = document.getElementById("recentlyPlayed");
-                    recentlyPlayedEl.innerHTML = ""; // Clear previous content
+        function updateRecentlyPlayed() {
+    fetch("http://127.0.0.1:5000/recently-played", { method: "GET" })
+    .then(response => response.json())
+    .then(data => {
+        if (data.recently_played) {
+            const recentlyPlayedEl = document.getElementById("recentlyPlayed");
+            recentlyPlayedEl.innerHTML = ""; // Clear previous content
 
-                    data.recently_played.forEach((song, index) => {
-                        const div = document.createElement("div");
-                        div.textContent = `${index + 1}. ${song.name} - ${song.artist}`;
-                        div.style.cursor = "pointer";
-                        div.style.padding = "5px";
-                        div.style.borderBottom = "1px solid #eee";
-                        div.onclick = () => playSongByUri(song.uri);
-                        
-                        recentlyPlayedEl.appendChild(div);
-                    });
-                }
-            })
-            .catch(error => console.error("Error:", error));
+            data.recently_played.forEach((song, index) => {
+                const div = document.createElement("div");
+                div.textContent = `${index + 1}. ${song.name} - ${song.artist}`;
+                div.style.cursor = "pointer";
+                div.style.padding = "5px";
+                div.style.borderBottom = "1px solid #eee";
+                div.onclick = () => playSongByUri(song.uri);
+                
+                recentlyPlayedEl.appendChild(div);
+            });
         }
+        
+    })
+    .catch(error => {
+        console.error("Error:", error);
+    });
+}
+// Initial call
+
     let totalDuration = 0; // Store song duration in milliseconds
 
 function updateProgress() {
@@ -292,7 +252,7 @@ function formatTime(ms) {
 }
 function playSongByUri(uri) {
             sendRequest("http://127.0.0.1:5000/play-song", "POST", { uri: uri })
-                .then(() => updateRecentlyPlayed());
+                .then(() => setInterval(updateRecentlyPlayed, 20000));
         }
 
 document.getElementById("progressBar").addEventListener("change", function(event) {
@@ -308,10 +268,10 @@ document.getElementById("progressBar").addEventListener("change", function(event
 });
 setInterval(updateProgress, 1000); // Update progress every second
     // Auto-refresh currently playing song every 10 seconds
-    setInterval(fetchCurrentSong, 1000);
+    setInterval(fetchCurrentSong, 2000);
     document.getElementById("refreshSongButton").addEventListener("click", fetchCurrentSong);
     fetchCurrentSong(); // Fetch song on page load
-    updateRecentlyPlayed();
+    setInterval(updateRecentlyPlayed, 20000)
     
 </script>
 <script>
@@ -328,7 +288,7 @@ setInterval(updateProgress, 1000); // Update progress every second
                 playSong(currentIndex + 1);  // Move to the next song
             } else {
                 sendRequest("http://127.0.0.1:5000/next")
-                    .then(() => updateRecentlyPlayed());
+                    .then(() => setInterval(updateRecentlyPlayed, 20000));
             }
         });
 
@@ -337,7 +297,7 @@ setInterval(updateProgress, 1000); // Update progress every second
                 playSong(currentIndex - 1);  // Move to the previous song
             } else {
                 sendRequest("http://127.0.0.1:5000/previous")
-                    .then(() => updateRecentlyPlayed());
+                   
             }
         });
 
@@ -355,16 +315,47 @@ setInterval(updateProgress, 1000); // Update progress every second
 
 </script>
 <script>
+    // Add this function to handle emotion-based color changes
+    function applyEmotionColor(emotion) {
+        const colors = {
+            happy: '#FF0000',    // Red
+            sad: '#0000FF',      // Blue
+            neutral: '#3355ff',  // Cyan
+            angry: '#8B0000'     // Dark Red
+        };
+        
+        // Smooth transition effect
+        document.body.style.transition = 'background-color 1s ease';
+        document.body.style.backgroundColor = colors[emotion] || '#000000';
+    }
+
+    // Modify the camera button handler to receive emotion data
     document.getElementById("camera-button").addEventListener("click", function() {
-        fetch("http://127.0.0.1:5000/start-scanning", {  // Explicitly call Flask
+        fetch("http://127.0.0.1:5000/start-scanning", {
             method: "POST",
             headers: { "Content-Type": "application/json" }
         })
-        .catch(error => {
-            console.error("Error:", error);
-        });
+        .then(response => response.json())
+        .then(data => {
+            if (data.emotion) {
+                applyEmotionColor(data.emotion);
+            }
+        })
+        .catch(error => console.error("Error:", error));
     });
+
+    // Optional: Add periodic emotion checking (if your system supports continuous detection)
+    setInterval(() => {
+        fetch("http://127.0.0.1:5000/current-emotion")
+            .then(response => response.json())
+            .then(data => {
+                if (data.emotion) {
+                    applyEmotionColor(data.emotion);
+                }
+            });
+    }, 1000); // Check every 5 seconds
 </script>
+
 <!-- Spotify Web Playback SDK -->
 <script src="https://sdk.scdn.co/spotify-player.js"></script>
 <script>

@@ -13,7 +13,8 @@ SPOTIPY_CLIENT_ID = "c598dbc98954494389fb6a89de9ff6a3"
 SPOTIPY_CLIENT_SECRET = "03746c236aa24f09a284525311dc4a8d"
 SPOTIPY_REDIRECT_URI = "http://localhost:3000/callback"
 
-
+EMOTION_API_URL = "http://localhost:5001/detect-emotion" 
+CURRENT_EMOTION = "neutral" 
 # Updated scope with all required permissions
 sp = spotipy.Spotify(auth_manager=SpotifyOAuth(
     client_id=SPOTIPY_CLIENT_ID,
@@ -379,15 +380,26 @@ def create_playlist_from_liked():
     except Exception as e:
         return jsonify({"error": str(e)}), 500
     
+def get_emotion_from_detection():
+    """Get emotion from detection system (simulated or real)"""
+    try:
+        # For real implementation, call your emotion detection API
+        # response = requests.get(EMOTION_API_URL)
+        # return response.json().get("emotion", "neutral")
+        
+        # Simulated emotions for testing
+        emotions = []
+        return emotions[datetime.now().second % len(emotions)]
+    except Exception as e:
+        print(f"Error detecting emotion: {str(e)}")
+        return "neutral"
+    
 @app.route('/current-emotion', methods=['GET'])
 def get_current_emotion():
-    # Replace with your actual emotion detection logic
-    detected_emotion = "neutral" 
-    detected_emotion = "sad"
-    detected_emotion = "angry"
-    
-    return jsonify({"emotion": detected_emotion})
-
+    """Get the current detected emotion"""
+    global CURRENT_EMOTION
+    CURRENT_EMOTION = get_emotion_from_detection()
+    return jsonify({"emotion": CURRENT_EMOTION})
 
 if __name__ == '__main__':
     app.run(host='0.0.0.0', port=5000, debug=True)

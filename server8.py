@@ -375,6 +375,17 @@ def create_playlist_from_liked():
         }), 200
     except Exception as e:
         return jsonify({"error": str(e)}), 500
+    
+@app.route('/current-emotion', methods=['GET'])
+def get_current_emotion():
+    # Replace with your actual emotion detection logic
+    detected_emotion = "neutral" 
+    detected_emotion = "sad"
+    detected_emotion = "angry"
+    detected_emotion = "happy" # Get this from your emotion detection system
+    return jsonify({"emotion": detected_emotion})
+
+
 
 if __name__ == '__main__':
     app.run(host='0.0.0.0', port=5000, debug=True)

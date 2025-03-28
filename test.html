@@ -80,9 +80,10 @@
     </div>
 
 
-    <!-- Recentplay -->
-    <div class="w-full md:w-1/4 bg-gray-900 p-4" bis_skin_checked="1" style="width: 832px;height: 532px;"><h2 class="text-xl font-bold">Recently Played</h2>
-        <div id="recentlyPlayed" bis_skin_checked="1" style="height: 500px;width: 800px;"></div>
+     <!-- Recently Played -->
+     <div class="w-full md:w-1/4 bg-gray-900 p-4" style="width: 832px;height: 532px;">
+        <h2 class="text-xl font-bold">Recently Played</h2>
+        <div id="recentlyPlayed" style="height: 500px;width: 800px;"></div>
     </div>
     
     <!-- Top Songs -->
@@ -195,23 +196,28 @@
         }
     
         function updateRecentlyPlayed() {
-    fetch("http://127.0.0.1:5000/recently-played", { method: "GET" })
-    .then(response => response.json())
-    .then(data => {
-        if (data.recently_played) {
-            const recentlyPlayedEl = document.getElementById("recentlyPlayed");
-            recentlyPlayedEl.innerHTML = ""; // Clear previous content
+            fetch("http://127.0.0.1:5000/recently-played", { method: "GET" })
+            .then(response => response.json())
+            .then(data => {
+                if (data.recently_played) {
+                    const recentlyPlayedEl = document.getElementById("recentlyPlayed");
+                    recentlyPlayedEl.innerHTML = "";
 
-            data.recently_played.forEach((song, index) => {
-                const div = document.createElement("div");
-                div.textContent = `${index + 1}. ${song.name} - ${song.artist}`;
-                div.style.cursor = "pointer";
-                div.style.padding = "5px";
-                div.style.borderBottom = "1px solid #eee";
-                div.onclick = () => playSongByUri(song.uri);
-                
-                recentlyPlayedEl.appendChild(div);
-            });
+                    data.recently_played.forEach((song, index) => {
+                        const div = document.createElement("div");
+                        div.className = "playlist-item";
+                        div.innerHTML = `
+                            <img src="${song.image || 'https://via.placeholder.com/40'}" alt="${song.name}">
+                            <div class="playlist-item-info">
+                                <div class="playlist-item-title">${song.name}</div>
+                                <div class="playlist-item-artist">${song.artist}</div>
+                            </div>
+                        `;
+                        div.addEventListener("click", () => {
+                            playSongByUri(song.uri);
+                        });
+                        recentlyPlayedEl.appendChild(div);
+                    });
         }
         
     })

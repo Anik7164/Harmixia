@@ -11,15 +11,15 @@ app = Flask(__name__)
 CORS(app)
 
 # Spotify API credentials
-SPOTIPY_CLIENT_ID = "73cecce44b3d4e2ebd39a9070b4105b2"
-SPOTIPY_CLIENT_SECRET = "37d2b33649644775a1960817b224e9c6"
-SPOTIPY_REDIRECT_URI = "http://localhost:8888/callback"
+SPOTIPY_CLIENT_ID = "c598dbc98954494389fb6a89de9ff6a3"
+SPOTIPY_CLIENT_SECRET = "03746c236aa24f09a284525311dc4a8d"
+SPOTIPY_REDIRECT_URI = "http://localhost:3000/callback"
 
 # File to store recently played songs
 RECENTLY_PLAYED_FILE = "recently_played.json"
 
 # Specific liked playlist URI
-LIKED_PLAYLIST_URI = "spotify:playlist:6B73TSXPjWR1H6oYvb1MKg"
+LIKED_PLAYLIST_URI = "spotify:playlist:7bAgQ9YR6GdKhKdTXvFyBl"
 
 # Initialize Spotify client
 sp = spotipy.Spotify(auth_manager=SpotifyOAuth(
@@ -501,6 +501,14 @@ def dislike_song():
             "success": False,
             "error": str(e)
         }), 500
+@app.route('/current-emotion', methods=['GET'])
+def get_current_emotion():
+    # Replace with your actual emotion detection logic
+    detected_emotion = "neutral" 
+    detected_emotion = "sad"
+    detected_emotion = "angry"
+    
+    return jsonify({"emotion": detected_emotion})
 
 if __name__ == '__main__':
     app.run(host='0.0.0.0', port=5000, debug=True)

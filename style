@@ -1,228 +1,58 @@
-/* Import Spotify's Circular font */
-@import url('https://fonts.cdnfonts.com/css/circular-std');
+        .modal {
+            display: none;
+            position: fixed;
+            z-index: 50;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            overflow: auto;
+            background-color: rgba(0, 0, 0, 0.5);
+        }
 
-/* Base Styles with Spotify Theme */
-body {
-    font-family: 'Circular Std', -apple-system, BlinkMacSystemFont, sans-serif;
-    background-color: #121212;
-    color: #ffffff;
-    height: 100vh;
-    display: flex;
-    flex-direction: column;
-    margin: 0;
-    transition: all 0.3s ease;
-}
+        .modal-content {
+            background-color: #1a1a1a;
+            margin: 15% auto;
+            padding: 20px;
+            border: 1px solid #888;
+            width: 80%;
+            max-width: 400px;
+            border-radius: 8px;
+            max-height: 80%;
+            overflow-y: auto;
+        }
 
-/* Spotify-like Button Styles */
-button {
-    background: transparent;
-    border: none;
-    color: white;
-    cursor: pointer;
-    transition: all 0.2s ease;
-    border-radius: 50%;
-    width: 40px;
-    height: 40px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-}
+        .search-results {
+            position: relative;
+            z-index: 20;
+            background-color: rgba(26, 26, 26, 0.8);
+            border-radius: 8px;
+            padding: 16px;
+            margin-top: 8px;
+        }
+        
+        #statusMessage {
+            position: fixed;
+            bottom: 20px;
+            left: 0;
+            right: 0;
+            margin: auto;
+            width: fit-content;
+            padding: 10px 20px;
+            background-color: rgba(0,0,0,0.7);
+            border-radius: 5px;
+            text-align: center;
+            color: #1DB954;
+            font-weight: bold;
+            z-index: 100;
+            transition: all 0.3s ease;
+        }
 
-button:hover {
-    background: rgba(255, 255, 255, 0.1);
-    transform: scale(1.05);
-}
+        #statusMessage.error {
+            color: #ff4d4d !important;
+        }
 
-button:active {
-    transform: scale(0.95);
-}
-
-/* Play Button Special Style */
-#playButton {
-    background: #1DB954;
-    width: 50px;
-    height: 50px;
-}
-
-#playButton:hover {
-    background: #1ED760;
-    transform: scale(1.1);
-}
-
-/* Volume Buttons */
-#volumeUpButton:hover, #volumeDownButton:hover {
-    color: #1DB954;
-}
-
-/* Progress Bar - Spotify Style */
-#progressBar {
-
-    height: 4px;
-    background: #535353;
-    border-radius: 2px;
-    cursor: pointer;
-    margin: 10px 0;
-}
-
-#progressBar::-webkit-slider-thumb {
-    -webkit-appearance: none;
-    width: 12px;
-    height: 12px;
-    background: #1DB954;
-    border-radius: 50%;
-    cursor: pointer;
-}
-
-/* Modal Styles */
-.modal {
-    display: none;
-    position: fixed;
-    z-index: 50;
-    left: 0;
-    top: 0;
-    width: 100%;
-    height: 100%;
-    overflow: auto;
-    background-color: rgba(0, 0, 0, 0.7);
-    font-family: 'Circular Std', sans-serif;
-}
-
-.modal-content {
-    background-color: #282828;
-    margin: 15% auto;
-    padding: 25px;
-    border: none;
-    width: 80%;
-    max-width: 400px;
-    border-radius: 12px;
-    max-height: 80%;
-    overflow-y: auto;
-    box-shadow: 0 8px 25px rgba(0, 0, 0, 0.3);
-}
-
-.modal-content a {
-    display: block;
-    background-color: #1DB954;
-    color: white;
-    text-align: center;
-    padding: 12px;
-    margin-bottom: 15px;
-    border-radius: 25px;
-    text-decoration: none;
-    font-weight: bold;
-    transition: all 0.2s ease;
-}
-
-.modal-content a:hover {
-    background-color: #1ED760;
-    transform: scale(1.02);
-}
-
-/* Search Results */
-.search-results {
-    position: relative;
-    z-index: 20;
-    background-color: #282828;
-    border-radius: 8px;
-    padding: 16px;
-    margin-top: 8px;
-    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
-}
-
-.search-results .track {
-    padding: 12px;
-    border-radius: 4px;
-    transition: all 0.2s ease;
-}
-
-.search-results .track:hover {
-    background-color: rgba(255, 255, 255, 0.1);
-}
-
-/* Album Art Hover Effects */
-img[id="albumArt"] {
-    transition: all 0.3s ease;
-    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.5);
-}
-
-img[id="albumArt"]:hover {
-    transform: scale(1.02);
-    box-shadow: 0 12px 28px rgba(0, 0, 0, 0.6);
-}
-
-/* Playlist Items */
-#playlist li {
-    padding: 8px 12px;
-    margin: 4px 0;
-    border-radius: 4px;
-    transition: all 0.2s ease;
-    cursor: pointer;
-}
-
-#playlist li:hover {
-    background-color: rgba(255, 255, 255, 0.1);
-}
-
-/* Recently Played Items */
-#recentlyPlayed div {
-    padding: 8px 12px;
-    margin: 4px 0;
-    border-radius: 4px;
-    transition: all 0.2s ease;
-}
-
-#recentlyPlayed div:hover {
-    background-color: rgba(255, 255, 255, 0.1);
-}
-
-/* Text Styles */
-h2 {
-    font-weight: 700;
-    font-size: 1.5rem;
-    margin-bottom: 1rem;
-}
-
-.text-gray-400 {
-    color: #b3b3b3;
-}
-
-/* Responsive Layout */
-@media (min-width: 768px) {
-    body {
-        flex-direction: row;
-    }
-    
-    .modal-content {
-        margin: 10% auto;
-    }
-}
-
-/* Blur Effect */
-.blur-background {
-    position: fixed;
-    top: 0;
-    left: 0;
-    width: 100%;
-    height: 100%;
-    backdrop-filter: blur(10px);
-    z-index: 10;
-    display: none;
-}
-
-/* Close Button in Modal */
-.close {
-    position: absolute;
-    right: 20px;
-    top: 15px;
-    font-size: 28px;
-    transition: all 0.2s ease;
-}
-
-.close:hover {
-    color: #1DB954;
-    transform: scale(1.1);
-}
- .playlist-item {
+        .playlist-item {
             display: flex;
             align-items: center;
             padding: 8px;
@@ -257,7 +87,7 @@ h2 {
             margin-top: 10px;
         }
         #recentlyPlayed {
-            max-height: 750px;
+            max-height: 500px;
             overflow-y: auto;
         }
 
@@ -370,7 +200,7 @@ h2 {
             flex-direction: column;
             gap: 10px;
             padding: 16px;
-            
+            background-color: #1a1a1a;
         }
 
         #fetchPlaylistButton, #fetchLikedSongsButton {
@@ -430,24 +260,4 @@ h2 {
             0% { transform: scale(1); }
             50% { transform: scale(1.3); }
             100% { transform: scale(1); }
-        }
-        #statusMessage {
-            position: fixed;
-            bottom: 20px;
-            left: 0;
-            right: 0;
-            margin: auto;
-            width: fit-content;
-            padding: 10px 20px;
-            background-color: rgba(0,0,0,0.7);
-            border-radius: 5px;
-            text-align: center;
-            color: #1DB954;
-            font-weight: bold;
-            z-index: 100;
-            transition: all 0.3s ease;
-        }
-
-        #statusMessage.error {
-            color: #ff4d4d !important;
         }

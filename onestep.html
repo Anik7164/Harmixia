@@ -1,0 +1,584 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Harmixia</title>
+    <link rel="stylesheet" href="styles5.css">
+</head>
+<body>
+    <div class="bar-container">
+        <!-- Left Bar - Player Controls -->
+        <div class="bar bar-left">
+            <div class="player-controls">
+                <div class="album-art-container">
+                    <img id="albumArt" src="" alt="Album Art" class="album-art">
+                </div>
+                <div class="song-info">
+                    <p id="currentSong" class="song-title">Not Playing</p>
+                </div>
+                <div class="progress-container">
+                    <input type="range" id="progressBar" min="0" max="100" value="0" class="progress-bar">
+                    <div class="time-display">
+                        <span id="currentTime">0:00</span> / <span id="totalTime">0:00</span>
+                    </div>
+                </div>
+                <div class="controls-row">
+                    <button id="prevButton" class="control-button">⏮</button>
+                    <button id="playButton" class="control-button">▶</button>
+                    <button id="pauseButton" class="control-button">⏸</button>
+                    <button id="nextButton" class="control-button">⏭</button>
+                    <button id="likeButton" class="control-button"><span class="heart-icon">❤</span></button>
+                </div>
+                <div class="volume-controls">
+                    <button id="volumeDownButton" class="volume-button">🔉</button>
+                    <button id="volumeUpButton" class="volume-button">🔊</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Middle Bar - Content -->
+        <div class="bar bar-middle">
+            <div class="user-controls">
+                <button id="camera-button" class="camera-button">
+                    <p id="status"></p>
+                    Camera
+                </button>
+                <span class="login-link" onclick="openModal()">Login</span>
+            </div>
+            
+            <!-- Recently Played -->
+            <div class="content-section">
+                <h2>Recently Played</h2>
+                <div id="recentlyPlayed" class="recently-played-container"></div>
+            </div>
+        </div>
+
+        <!-- Right Container - Playlists -->
+        <div class="separate-right-container">
+            <div class="separate-part separate-top">
+                <div class="playlist-section">
+                    <button id="fetchPlaylistButton" class="playlist-button">
+                        Show Playlist
+                    </button>
+                    <button id="fetchLikedSongsButton" class="playlist-button">
+                        Liked Songs
+                    </button>
+                    <p id="playlistError" class="error-message"></p>
+                </div>
+            </div>
+            
+            <div class="separate-part separate-bottom">
+                <!-- Empty now since like button was moved -->
+            </div>
+        </div>
+    </div>
+
+    <!-- Playlist Modal -->
+    <div id="playlistModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2>Playlist Songs</h2>
+                <button id="closePlaylist" class="close-button">×</button>
+            </div>
+            <div class="modal-body">
+                <div id="playlist" class="playlist-container"></div>
+            </div>
+            <div class="modal-footer">
+                <p id="playlistStatus">Double click to play a song</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- Login Modal -->
+    <div id="loginModal" class="modal">
+        <div class="modal-content">
+            <span class="close-button" onclick="closeModal()">×</span>
+            <h2>Login</h2>
+            <div class="auth-buttons">
+                <a href="../Two Factor Authentication using PHP/index.php" class="auth-button">Login</a>
+                <a href="../Two Factor Authentication using PHP/registration.php" class="auth-button">Sign Up</a>
+            </div>
+        </div>
+    </div>
+
+    <div id="statusMessage" class="status-message"></div>
+
+    <script>
+        // Your existing JavaScript remains exactly the same
+        let currentPlaylist = [];
+        let currentIndex = -1;
+        let currentPlaylistUri = null;
+        let currentSongData = null;
+        let totalDuration = 0;
+        const LIKED_PLAYLIST_URI = "spotify:playlist:6B73TSXPjWR1H6oYvb1MKg";
+        let emotionInterval = null;
+        let isPlaying = false;
+
+        function sendRequest(url, method = "POST", body = null) {
+            return fetch(url, { 
+                method: method,
+                headers: { "Content-Type": "application/json" },
+                body: body ? JSON.stringify(body) : null
+            })
+            .then(response => response.json())
+            .catch(error => {
+                console.error("Error:", error);
+                throw error;
+            });
+        }
+
+        function fetchCurrentSong() {
+            fetch("http://127.0.0.1:5000/current-song", { method: "GET" })
+            .then(response => response.json())
+            .then(data => {
+                if (data.error) {
+                    document.getElementById("currentSong").textContent = "Not playing";
+                    document.getElementById("albumArt").src = "";
+                    currentSongData = null;
+                    updateLikeButton(false);
+                    isPlaying = false;
+                    stopEmotionUpdates();
+                } else {
+                    document.getElementById("currentSong").textContent = `${data.name} - ${data.artist}`;
+                    document.getElementById("albumArt").src = data.image;
+                    currentSongData = data;
+                    updateLikeButton(data.is_liked || data.in_my_playlist);
+                    isPlaying = data.is_playing;
+                    
+                    // Start or stop emotion updates based on playback state
+                    if (data.is_playing) {
+                        stopEmotionUpdates();
+                    } else {
+                        startEmotionUpdates();
+                    }
+                }
+            })
+            .catch(error => console.error("Error:", error));
+        }
+
+        function startEmotionUpdates() {
+            if (!emotionInterval) {
+                emotionInterval = setInterval(() => {
+                    fetch("http://127.0.0.1:5000/current-emotion")
+                        .then(response => response.json())
+                        .then(data => {
+                            if (data.emotion) {
+                                applyEmotionColor(data.emotion);
+                            }
+                        });
+                }, 1000);
+            }
+        }
+
+        function stopEmotionUpdates() {
+            if (emotionInterval) {
+                clearInterval(emotionInterval);
+                emotionInterval = null;
+            }
+        }
+
+        function updateLikeButton(isLiked) {
+            const likeButton = document.getElementById('likeButton');
+            const heartIcon = likeButton.querySelector('.heart-icon');
+            if (isLiked) {
+                likeButton.classList.add('liked');
+                heartIcon.style.color = '#ff0000';
+                heartIcon.style.textShadow = '0 0 10px rgba(255, 0, 0, 0.7)';
+            } else {
+                likeButton.classList.remove('liked');
+                heartIcon.style.color = 'white';
+                heartIcon.style.textShadow = 'none';
+            }
+        }
+
+        function toggleLike() {
+            if (!currentSongData) return;
+            
+            const statusEl = document.getElementById('statusMessage');
+            const isLiked = currentSongData.is_liked || currentSongData.in_my_playlist;
+            
+            if (isLiked) {
+                // Dislike the song
+                statusEl.textContent = "Removing...";
+                
+                fetch('http://127.0.0.1:5000/dislike-song', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ uri: currentSongData.uri })
+                })
+                .then(response => {
+                    if (!response.ok) {
+                        throw new Error('Failed to remove song');
+                    }
+                    return response.json();
+                })
+                .then(data => {
+                    if (data.error) {
+                        throw new Error(data.error);
+                    }
+                    showStatusMessage("Removed");
+                    updateLikeButton(false);
+                    fetchCurrentSong();
+                })
+                .catch(error => {
+                    showError(error.message || "Failed to remove song from your playlist");
+                    console.error('Dislike error:', error);
+                });
+            } else {
+                // Like the song
+                statusEl.textContent = "Adding...";
+                
+                fetch('http://127.0.0.1:5000/like-song', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ uri: currentSongData.uri })
+                })
+                .then(response => {
+                    if (!response.ok) {
+                        throw new Error('Failed to add song');
+                    }
+                    return response.json();
+                })
+                .then(data => {
+                    if (data.error) {
+                        throw new Error(data.error);
+                    }
+                    showStatusMessage("Added ");
+                    updateLikeButton(true);
+                    fetchCurrentSong();
+                })
+                .catch(error => {
+                    showError(error.message || "Failed to add song to your playlist");
+                    console.error('Like error:', error);
+                });
+            }
+        }
+
+        function showStatusMessage(message) {
+            const statusEl = document.getElementById('statusMessage');
+            statusEl.textContent = message;
+            setTimeout(() => {
+                statusEl.textContent = '';
+            }, 3000);
+        }
+
+        function showError(message) {
+            const statusEl = document.getElementById('statusMessage');
+            statusEl.textContent = message;
+            setTimeout(() => {
+                statusEl.textContent = '';
+            }, 3000);
+        }
+
+        function showPlaylist(songs, playlistUri = null) {
+            const playlistEl = document.getElementById("playlist");
+            playlistEl.innerHTML = "";
+
+            if (playlistUri) {
+                currentPlaylistUri = playlistUri;
+            }
+
+            if (songs.length === 0) {
+                playlistEl.innerHTML = "<p>No songs in playlist</p>";
+                return;
+            }
+
+            currentPlaylist = songs;
+            
+            songs.forEach((song, index) => {
+                const item = document.createElement("div");
+                item.className = "playlist-item";
+                
+                item.innerHTML = `
+                    <img src="${song.image || ''}" alt="${song.name}" class="playlist-item-image">
+                    <div class="playlist-item-info">
+                        <div class="playlist-item-title">${song.name}</div>
+                        <div class="playlist-item-artist">${song.artist}</div>
+                    </div>
+                `;
+                
+                item.addEventListener("click", () => {
+                    playSong(index);
+                });
+                
+                playlistEl.appendChild(item);
+            });
+        }
+
+        function playSong(index) {
+            if (currentPlaylist && index >= 0 && index < currentPlaylist.length) {
+                currentIndex = index;
+                const song = currentPlaylist[index];
+                
+                fetch("http://127.0.0.1:5000/play-song", {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({ 
+                        uri: song.uri,
+                        context_uri: currentPlaylistUri 
+                    })
+                })
+                .then(() => {
+                    updateRecentlyPlayed();
+                    fetchCurrentSong();
+                    stopEmotionUpdates();
+                })
+                .catch(error => console.error("Error:", error));
+            }
+        }
+        
+        function fetchPlaylist() {
+            const button = document.getElementById("fetchPlaylistButton");
+            const errorEl = document.getElementById("playlistError");
+            button.textContent = "Loading...";
+            button.disabled = true;
+            
+            fetch("http://127.0.0.1:5000/current-playlist")
+                .then(response => response.json())
+                .then(data => {
+                    if (data.playlist) {
+                        currentPlaylist = data.playlist;
+                        showPlaylist(data.playlist, data.playlist_uri);
+                        document.getElementById('playlistStatus').textContent = 
+                            `${data.playlist.length} songs in playlist`;
+                        document.getElementById('playlistModal').style.display = "flex";
+                    } else if (data.error) {
+                        errorEl.textContent = data.error;
+                        document.getElementById('playlistStatus').textContent = 
+                            "Error loading playlist";
+                    }
+                })
+                .catch(error => {
+                    errorEl.textContent = "Failed to load playlist";
+                    document.getElementById('playlistStatus').textContent = 
+                            "Failed to load playlist";
+                    console.error("Error:", error);
+                })
+                .finally(() => {
+                    button.textContent = "Show Playlist";
+                    button.disabled = false;
+                });
+        }
+
+        function fetchLikedSongs() {
+            const button = document.getElementById("fetchLikedSongsButton");
+            button.textContent = "Loading...";
+            button.disabled = true;
+            
+            fetch(`http://127.0.0.1:5000/current-playlist?playlist_uri=${encodeURIComponent(LIKED_PLAYLIST_URI)}`)
+                .then(response => response.json())
+                .then(data => {
+                    if (data.playlist) {
+                        currentPlaylist = data.playlist;
+                        showPlaylist(data.playlist, LIKED_PLAYLIST_URI);
+                        document.getElementById('playlistStatus').textContent = 
+                            `${data.playlist.length} liked songs`;
+                        document.getElementById('playlistModal').style.display = "flex";
+                    } else if (data.error) {
+                        showError(data.error);
+                        document.getElementById('playlistStatus').textContent = 
+                            "Error loading liked songs";
+                    }
+                })
+                .catch(error => {
+                    showError("Failed to load liked songs");
+                    document.getElementById('playlistStatus').textContent = 
+                            "Failed to load liked songs";
+                    console.error("Error:", error);
+                })
+                .finally(() => {
+                    button.textContent = "Show Liked Songs";
+                    button.disabled = false;
+                });
+        }
+    
+        function updateRecentlyPlayed() {
+            fetch("http://127.0.0.1:5000/recently-played", { method: "GET" })
+            .then(response => response.json())
+            .then(data => {
+                if (data.recently_played) {
+                    const recentlyPlayedEl = document.getElementById("recentlyPlayed");
+                    recentlyPlayedEl.innerHTML = "";
+
+                    data.recently_played.forEach((song, index) => {
+                        const div = document.createElement("div");
+                        div.className = "recently-played-item";
+                        div.innerHTML = `
+                            <img src="${song.image || ''}" alt="${song.name}" class="recently-played-image">
+                            <div class="recently-played-info">
+                                <div class="recently-played-title">${song.name}</div>
+                                <div class="recently-played-artist">${song.artist}</div>
+                            </div>
+                        `;
+                        div.addEventListener("click", () => {
+                            playSongByUri(song.uri);
+                        });
+                        recentlyPlayedEl.appendChild(div);
+                    });
+                }
+            })
+            .catch(error => console.error("Error:", error));
+        }
+
+        function updateProgress() {
+            fetch("http://127.0.0.1:5000/music-progress", { method: "GET" })
+            .then(response => response.json())
+            .then(data => {
+                if (data.progress !== undefined && data.duration !== undefined) {
+                    totalDuration = data.duration;
+                    document.getElementById("progressBar").value = (data.progress / data.duration) * 100;
+                    document.getElementById("currentTime").textContent = formatTime(data.progress);
+                    document.getElementById("totalTime").textContent = formatTime(data.duration);
+                }
+            })
+            .catch(error => console.error("Error:", error));
+        }
+
+        function formatTime(ms) {
+            const seconds = Math.floor(ms / 1000) % 60;
+            const minutes = Math.floor(ms / 60000);
+            return `${minutes}:${seconds.toString().padStart(2, "0")}`;
+        }
+        
+        function playSongByUri(uri) {
+            fetch("http://127.0.0.1:5000/play-song", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ uri: uri })
+            })
+            .then(() => {
+                updateRecentlyPlayed();
+                fetchCurrentSong();
+                stopEmotionUpdates();
+            })
+            .catch(error => console.error("Error:", error));
+        }
+
+        setInterval(updateProgress, 1000);
+        setInterval(fetchCurrentSong, 3000);
+        
+        fetchCurrentSong();
+        updateRecentlyPlayed();
+
+        document.getElementById("fetchPlaylistButton").addEventListener("click", function() {
+            const playlistModal = document.getElementById("playlistModal");
+            if (playlistModal.style.display === "flex") {
+                playlistModal.style.display = "none";
+            } else {
+                fetchPlaylist();
+            }
+        });
+
+        document.getElementById("fetchLikedSongsButton").addEventListener("click", function() {
+            const playlistModal = document.getElementById("playlistModal");
+            if (playlistModal.style.display === "flex") {
+                playlistModal.style.display = "none";
+            } else {
+                fetchLikedSongs();
+            }
+        });
+
+        document.getElementById("closePlaylist").addEventListener("click", function() {
+            document.getElementById("playlistModal").style.display = "none";
+        });
+
+        document.getElementById("playButton").addEventListener("click", () => {
+            sendRequest("http://127.0.0.1:5000/play")
+                .then(() => {
+                    fetchCurrentSong();
+                    stopEmotionUpdates();
+                });
+        });
+
+        document.getElementById("pauseButton").addEventListener("click", () => {
+            sendRequest("http://127.0.0.1:5000/pause")
+                .then(() => {
+                    fetchCurrentSong();
+                    startEmotionUpdates();
+                });
+        });
+
+        document.getElementById("nextButton").addEventListener("click", () => {
+            if (currentIndex + 1 < currentPlaylist.length) {
+                playSong(currentIndex + 1);
+            } else {
+                sendRequest("http://127.0.0.1:5000/next")
+                    .then(() => {
+                        updateRecentlyPlayed();
+                        fetchCurrentSong();
+                        stopEmotionUpdates();
+                    });
+            }
+        });
+
+        document.getElementById("prevButton").addEventListener("click", () => {
+            if (currentIndex - 1 >= 0) {
+                playSong(currentIndex - 1);
+            } else {
+                sendRequest("http://127.0.0.1:5000/previous")
+                    .then(() => {
+                        updateRecentlyPlayed();
+                        fetchCurrentSong();
+                        stopEmotionUpdates();
+                    });
+            }
+        });
+
+        document.getElementById("volumeUpButton").addEventListener("click", () => {
+            sendRequest("http://127.0.0.1:5000/volume-up");
+        });
+
+        document.getElementById("volumeDownButton").addEventListener("click", () => {
+            sendRequest("http://127.0.0.1:5000/volume-down");
+        });
+
+        function applyEmotionColor(emotion) {
+            const colors = {
+                happy: '#FF0000',
+                sad: '#0000FF',
+                neutral: '#3355ff',
+                angry: '#8B0000'
+            };
+            
+            document.body.style.backgroundColor = colors[emotion] || '#000000';
+        }
+
+        document.getElementById("camera-button").addEventListener("click", function() {
+            fetch("http://127.0.0.1:5000/start-scanning", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" }
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.emotion) {
+                    applyEmotionColor(data.emotion);
+                }
+                startEmotionUpdates();
+            })
+            .catch(error => console.error("Error:", error));
+        });
+
+        document.getElementById("progressBar").addEventListener("input", function(event) {
+            if (totalDuration > 0) {
+                const newPosition = (event.target.value / 100) * totalDuration;
+                fetch("http://127.0.0.1:5000/seek", {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({ position_ms: Math.floor(newPosition) })
+                }).catch(console.error);
+            }
+        });
+
+        document.getElementById("likeButton").addEventListener("click", toggleLike);
+
+        function openModal() {
+            document.getElementById("loginModal").style.display = "block";
+        }
+
+        function closeModal() {
+            document.getElementById("loginModal").style.display = "none";
+        }
+    </script>
+</body>
+</html>

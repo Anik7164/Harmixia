@@ -13,11 +13,11 @@ CORS(app)
 
 # Configuration
 CONFIG = {
-    "SPOTIPY_CLIENT_ID": "73cecce44b3d4e2ebd39a9070b4105b2",
-    "SPOTIPY_CLIENT_SECRET": "37d2b33649644775a1960817b224e9c6",
-    "SPOTIPY_REDIRECT_URI": "http://localhost:8888/callback",
+    "SPOTIPY_CLIENT_ID": "c598dbc98954494389fb6a89de9ff6a3",
+    "SPOTIPY_CLIENT_SECRET": "03746c236aa24f09a284525311dc4a8d",
+    "SPOTIPY_REDIRECT_URI": "http://localhost:3000/callback",
     "RECENTLY_PLAYED_FILE": "recently_played.json",
-    "LIKED_PLAYLIST_URI": "spotify:playlist:6B73TSXPjWR1H6oYvb1MKg",
+    "LIKED_PLAYLIST_URI": "spotify:playlist:7bAgQ9YR6GdKhKdTXvFyBl",
     "EMOTION_LABELS": {
         1: "nothing",
         2: "happy",

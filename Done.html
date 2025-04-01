@@ -1,0 +1,595 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Harmixia</title>
+    <style>
+        /* Updated styles for the user controls section */
+        .user-controls {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 20px;
+        }
+        
+        .camera-container {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        
+        .emotion-status {
+            font-size: 1em;
+            padding: 8px 12px;
+            background-color: rgba(0, 0, 0, 0.2);
+            border-radius: 5px;
+            transition: all 0.3s ease;
+        }
+
+        /* Remove the old emotion status from song info */
+        .song-info .emotion-status {
+            display: none;
+        }
+    </style>
+    <script>
+        // Emotion to theme mapping
+        const emotionThemes = {
+            1: 'onestepcloser.css',    // nothing (default)
+            2: 'happy.css',            // happy
+            3: 'sad.css',              // sad
+            4: 'angry.css',            // angry
+            5: 'neutral.css'           // neutral
+        };
+
+        function changeTheme(emotionNumber) {
+            const themeFile = emotionThemes[emotionNumber] || emotionThemes[1];
+            document.getElementById('theme-style').setAttribute('href', themeFile);
+            
+            // Update UI to show current emotion beside camera button
+            const emotionLabels = {
+                1: "No face detected",
+                2: "Happy mood detected! 🎉",
+                3: "Sad mood detected 😢",
+                4: "Angry mood detected 😠",
+                5: "Neutral mood detected 😐"
+            };
+            document.getElementById('emotion-status').textContent = emotionLabels[emotionNumber];
+        }
+    </script>
+    <link id="theme-style" rel="stylesheet" href="onestepcloser.css">
+</head>
+<body>
+    <div class="bar-container">
+        <!-- Left Bar - Player Controls -->
+        <div class="bar bar-left">
+            <div class="player-controls">
+                <div class="album-art-container">
+                    <img id="albumArt" src="" alt="Album Art" class="album-art">
+                </div>
+                <div class="song-info">
+                    <p id="currentSong" class="song-title">Not Playing</p>
+                    <!-- Removed the emotion status from here -->
+                </div>
+                <div class="progress-container">
+                    <input type="range" id="progressBar" min="0" max="100" value="0" class="progress-bar">
+                    <div class="time-display">
+                        <span id="currentTime">0:00</span> / <span id="totalTime">0:00</span>
+                    </div>
+                </div>
+                <div class="controls-row">
+                    <button id="prevButton" class="control-button">⏮</button>
+                    <button id="playButton" class="control-button">▶</button>
+                    <button id="pauseButton" class="control-button">⏸</button>
+                    <button id="nextButton" class="control-button">⏭</button>
+                    <button id="likeButton" class="control-button"><span class="heart-icon">❤</span></button>
+                </div>
+                <div class="volume-controls">
+                    <button id="volumeDownButton" class="volume-button">🔉</button>
+                    <button id="volumeUpButton" class="volume-button">🔊</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Middle Bar - Content -->
+        <div class="bar bar-middle">
+            <div class="user-controls">
+                <div class="camera-container">
+                    <button id="camera-button" class="camera-button">
+                        <p id="status"></p>
+                        Camera
+                    </button>
+                    <div id="emotion-status" class="emotion-status">Camera off</div>
+                </div>
+                <span class="login-link" onclick="openModal()">
+                    <svg class="login-icon" viewBox="0 0 24 24" width="20" height="20">
+                        <path fill="currentColor" d="M12 4a4 4 0 0 1 4 4 4 4 0 0 1-4 4 4 4 0 0 1-4-4 4 4 0 0 1 4-4m0 10c4.42 0 8 1.79 8 4v2H4v-2c0-2.21 3.58-4 8-4z"/>
+                    </svg>
+                    Login
+                </span>
+            </div>
+            
+            <!-- Recently Played -->
+            <div class="content-section">
+                <h2>Recently Played</h2>
+                <div id="recentlyPlayed" class="recently-played-container"></div>
+            </div>
+        </div>
+
+        <!-- Right Container - Playlists -->
+        <div class="separate-right-container">
+            <div class="separate-part separate-top">
+                <button id="fetchPlaylistButton" class="playlist-button">
+                    Show Playlist
+                </button>
+                <p id="playlistError" class="error-message"></p>
+                <div id="playlist" class="playlist-container"></div>
+            </div>
+            
+            <div class="separate-part separate-bottom">
+                <button id="fetchLikedSongsButton" class="playlist-button">
+                    Show Liked Songs
+                </button>
+                <div id="likedSongs" class="playlist-container"></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Login Modal -->
+    <div id="loginModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2>Login</h2>
+                <span class="close-button" onclick="closeModal()">×</span>
+            </div>
+            <div class="modal-body">
+                <div class="auth-buttons">
+                    <a href="../Two Factor Authentication using PHP/index.php" class="auth-button">Login</a>
+                    <a href="../Two Factor Authentication using PHP/registration.php" class="auth-button">Sign Up</a>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div id="statusMessage" class="status-message"></div>
+
+    <script>
+        let currentPlaylist = [];
+        let currentIndex = -1;
+        let currentPlaylistUri = null;
+        let currentSongData = null;
+        let totalDuration = 0;
+        const LIKED_PLAYLIST_URI = "spotify:playlist:6B73TSXPjWR1H6oYvb1MKg";
+        let emotionInterval = null;
+        let isPlaying = false;
+        let isCameraActive = false;
+        let currentEmotion = 1; // Track current emotion (1 = default)
+
+        function sendRequest(url, method = "POST", body = null) {
+            return fetch(url, { 
+                method: method,
+                headers: { "Content-Type": "application/json" },
+                body: body ? JSON.stringify(body) : null
+            })
+            .then(response => response.json())
+            .catch(error => {
+                console.error("Error:", error);
+                throw error;
+            });
+        }
+
+        function fetchCurrentSong() {
+            fetch("http://127.0.0.1:5000/current-song", { method: "GET" })
+            .then(response => response.json())
+            .then(data => {
+                if (data.error) {
+                    document.getElementById("currentSong").textContent = "Not playing";
+                    document.getElementById("albumArt").src = "";
+                    currentSongData = null;
+                    updateLikeButton(false);
+                    isPlaying = false;
+                    if (isCameraActive) stopEmotionUpdates();
+                } else {
+                    document.getElementById("currentSong").textContent = `${data.name} - ${data.artist}`;
+                    document.getElementById("albumArt").src = data.image;
+                    currentSongData = data;
+                    updateLikeButton(data.is_liked);
+                    isPlaying = data.is_playing;
+                    
+                    if (data.is_playing && isCameraActive) {
+                        stopEmotionUpdates();
+                    } else if (!data.is_playing && isCameraActive) {
+                        startEmotionUpdates();
+                    }
+                }
+            })
+            .catch(error => console.error("Error:", error));
+        }
+
+        function startEmotionUpdates() {
+            if (!emotionInterval) {
+                emotionInterval = setInterval(() => {
+                    fetch("http://127.0.0.1:5000/current-emotion")
+                        .then(response => response.json())
+                        .then(data => {
+                            if (data.emotion && data.emotion !== currentEmotion) {
+                                currentEmotion = data.emotion;
+                                changeTheme(data.emotion);
+                            }
+                        })
+                        .catch(error => {
+                            console.error("Emotion detection error:", error);
+                            document.getElementById('emotion-status').textContent = "Emotion detection offline";
+                        });
+                }, 1000);
+                document.getElementById('emotion-status').textContent = "Detecting mood...";
+            }
+        }
+
+        function stopEmotionUpdates() {
+            if (emotionInterval) {
+                clearInterval(emotionInterval);
+                emotionInterval = null;
+                document.getElementById('emotion-status').textContent = "Camera paused";
+            }
+        }
+
+        function updateLikeButton(isLiked) {
+            const likeButton = document.getElementById('likeButton');
+            const heartIcon = likeButton.querySelector('.heart-icon');
+            if (isLiked) {
+                likeButton.classList.add('liked');
+                heartIcon.style.color = '#ff0000';
+                heartIcon.style.textShadow = '0 0 10px rgba(255, 0, 0, 0.7)';
+            } else {
+                likeButton.classList.remove('liked');
+                heartIcon.style.color = 'white';
+                heartIcon.style.textShadow = 'none';
+            }
+        }
+
+        function toggleLike() {
+            if (!currentSongData) {
+                showError("No song currently playing");
+                return;
+            }
+            
+            const statusEl = document.getElementById('statusMessage');
+            statusEl.textContent = "Processing...";
+            statusEl.style.opacity = 1;
+            
+            const isLiked = document.getElementById('likeButton').classList.contains('liked');
+            const endpoint = isLiked ? 'dislike-song' : 'like-song';
+            
+            fetch(`http://127.0.0.1:5000/${endpoint}`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ uri: currentSongData.uri })
+            })
+            .then(response => {
+                if (!response.ok) {
+                    throw new Error(`Failed to ${isLiked ? 'unlike' : 'like'} song`);
+                }
+                return response.json();
+            })
+            .then(data => {
+                if (data.error) {
+                    throw new Error(data.error);
+                }
+                updateLikeButton(!isLiked);
+                showStatusMessage(isLiked ? "Removed from liked songs" : "Added to liked songs");
+                fetchCurrentSong();
+            })
+            .catch(error => {
+                showError(error.message || `Failed to ${isLiked ? 'unlike' : 'like'} song`);
+                console.error('Like error:', error);
+            });
+        }
+
+        function showStatusMessage(message) {
+            const statusEl = document.getElementById('statusMessage');
+            statusEl.textContent = message;
+            statusEl.style.opacity = 1;
+            setTimeout(() => {
+                statusEl.style.opacity = 0;
+            }, 3000);
+        }
+
+        function showError(message) {
+            const statusEl = document.getElementById('statusMessage');
+            statusEl.textContent = message;
+            statusEl.style.opacity = 1;
+            setTimeout(() => {
+                statusEl.style.opacity = 0;
+            }, 3000);
+        }
+
+        function showPlaylist(songs, playlistUri = null, targetElementId) {
+            const playlistEl = document.getElementById(targetElementId);
+            playlistEl.innerHTML = "";
+
+            if (playlistUri) {
+                currentPlaylistUri = playlistUri;
+            }
+
+            if (songs.length === 0) {
+                playlistEl.innerHTML = "<p>No songs in playlist</p>";
+                return;
+            }
+
+            currentPlaylist = songs;
+            
+            songs.forEach((song, index) => {
+                const item = document.createElement("div");
+                item.className = "playlist-item";
+                
+                item.innerHTML = `
+                    <img src="${song.image || ''}" alt="${song.name}" class="playlist-item-image">
+                    <div class="playlist-item-info">
+                        <div class="playlist-item-title">${song.name}</div>
+                        <div class="playlist-item-artist">${song.artist}</div>
+                    </div>
+                `;
+                
+                item.addEventListener("click", () => {
+                    playSong(index);
+                });
+                
+                playlistEl.appendChild(item);
+            });
+        }
+
+        function playSong(index) {
+            if (currentPlaylist && index >= 0 && index < currentPlaylist.length) {
+                currentIndex = index;
+                const song = currentPlaylist[index];
+                
+                fetch("http://127.0.0.1:5000/play-song", {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({ 
+                        uri: song.uri,
+                        context_uri: currentPlaylistUri 
+                    })
+                })
+                .then(() => {
+                    updateRecentlyPlayed();
+                    fetchCurrentSong();
+                    if (isCameraActive) stopEmotionUpdates();
+                })
+                .catch(error => console.error("Error:", error));
+            }
+        }
+        
+        function fetchPlaylist() {
+            const button = document.getElementById("fetchPlaylistButton");
+            const errorEl = document.getElementById("playlistError");
+            button.textContent = "Loading...";
+            button.disabled = true;
+            
+            fetch("http://127.0.0.1:5000/current-playlist")
+                .then(response => response.json())
+                .then(data => {
+                    if (data.playlist) {
+                        currentPlaylist = data.playlist;
+                        showPlaylist(data.playlist, data.playlist_uri, "playlist");
+                    } else if (data.error) {
+                        errorEl.textContent = data.error;
+                    }
+                })
+                .catch(error => {
+                    errorEl.textContent = "Failed to load playlist";
+                    console.error("Error:", error);
+                })
+                .finally(() => {
+                    button.textContent = "Show Playlist";
+                    button.disabled = false;
+                });
+        }
+
+        function fetchLikedSongs() {
+            const button = document.getElementById("fetchLikedSongsButton");
+            button.textContent = "Loading...";
+            button.disabled = true;
+            
+            fetch(`http://127.0.0.1:5000/current-playlist?playlist_uri=${encodeURIComponent(LIKED_PLAYLIST_URI)}`)
+                .then(response => response.json())
+                .then(data => {
+                    if (data.playlist) {
+                        currentPlaylist = data.playlist;
+                        showPlaylist(data.playlist, LIKED_PLAYLIST_URI, "likedSongs");
+                    } else if (data.error) {
+                        showError(data.error);
+                    }
+                })
+                .catch(error => {
+                    showError("Failed to load liked songs");
+                    console.error("Error:", error);
+                })
+                .finally(() => {
+                    button.textContent = "Show Liked Songs";
+                    button.disabled = false;
+                });
+        }
+    
+        function updateRecentlyPlayed() {
+            fetch("http://127.0.0.1:5000/recently-played", { method: "GET" })
+            .then(response => response.json())
+            .then(data => {
+                if (data.recently_played) {
+                    const recentlyPlayedEl = document.getElementById("recentlyPlayed");
+                    recentlyPlayedEl.innerHTML = "";
+
+                    data.recently_played.forEach((song, index) => {
+                        const div = document.createElement("div");
+                        div.className = "recently-played-item";
+                        div.innerHTML = `
+                            <img src="${song.image || ''}" alt="${song.name}" class="recently-played-image">
+                            <div class="recently-played-info">
+                                <div class="recently-played-title">${song.name}</div>
+                                <div class="recently-played-artist">${song.artist}</div>
+                            </div>
+                        `;
+                        div.addEventListener("click", () => {
+                            playSongByUri(song.uri);
+                        });
+                        recentlyPlayedEl.appendChild(div);
+                    });
+                }
+            })
+            .catch(error => console.error("Error:", error));
+        }
+
+        function updateProgress() {
+            fetch("http://127.0.0.1:5000/music-progress", { method: "GET" })
+            .then(response => response.json())
+            .then(data => {
+                if (data.progress !== undefined && data.duration !== undefined) {
+                    totalDuration = data.duration;
+                    document.getElementById("progressBar").value = (data.progress / data.duration) * 100;
+                    document.getElementById("currentTime").textContent = formatTime(data.progress);
+                    document.getElementById("totalTime").textContent = formatTime(data.duration);
+                }
+            })
+            .catch(error => console.error("Error:", error));
+        }
+
+        function formatTime(ms) {
+            const seconds = Math.floor(ms / 1000) % 60;
+            const minutes = Math.floor(ms / 60000);
+            return `${minutes}:${seconds.toString().padStart(2, "0")}`;
+        }
+        
+        function playSongByUri(uri) {
+            fetch("http://127.0.0.1:5000/play-song", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ uri: uri })
+            })
+            .then(() => {
+                updateRecentlyPlayed();
+                fetchCurrentSong();
+                if (isCameraActive) stopEmotionUpdates();
+            })
+            .catch(error => console.error("Error:", error));
+        }
+
+        // Initialize intervals
+        setInterval(updateProgress, 1000);
+        setInterval(fetchCurrentSong, 3000);
+        
+        // Initial data load
+        fetchCurrentSong();
+        updateRecentlyPlayed();
+
+        // Event listeners
+        document.getElementById("fetchPlaylistButton").addEventListener("click", fetchPlaylist);
+        document.getElementById("fetchLikedSongsButton").addEventListener("click", fetchLikedSongs);
+
+        document.getElementById("playButton").addEventListener("click", () => {
+            sendRequest("http://127.0.0.1:5000/play")
+                .then(() => {
+                    fetchCurrentSong();
+                    if (isCameraActive) stopEmotionUpdates();
+                });
+        });
+
+        document.getElementById("pauseButton").addEventListener("click", () => {
+            sendRequest("http://127.0.0.1:5000/pause")
+                .then(() => {
+                    fetchCurrentSong();
+                    if (isCameraActive) startEmotionUpdates();
+                });
+        });
+
+        document.getElementById("nextButton").addEventListener("click", () => {
+            if (currentIndex + 1 < currentPlaylist.length) {
+                playSong(currentIndex + 1);
+            } else {
+                sendRequest("http://127.0.0.1:5000/next")
+                    .then(() => {
+                        updateRecentlyPlayed();
+                        fetchCurrentSong();
+                        if (isCameraActive) stopEmotionUpdates();
+                    });
+            }
+        });
+
+        document.getElementById("prevButton").addEventListener("click", () => {
+            if (currentIndex - 1 >= 0) {
+                playSong(currentIndex - 1);
+            } else {
+                sendRequest("http://127.0.0.1:5000/previous")
+                    .then(() => {
+                        updateRecentlyPlayed();
+                        fetchCurrentSong();
+                        if (isCameraActive) stopEmotionUpdates();
+                    });
+            }
+        });
+
+        document.getElementById("volumeUpButton").addEventListener("click", () => {
+            sendRequest("http://127.0.0.1:5000/volume-up");
+        });
+
+        document.getElementById("volumeDownButton").addEventListener("click", () => {
+            sendRequest("http://127.0.0.1:5000/volume-down");
+        });
+
+        document.getElementById("camera-button").addEventListener("click", function() {
+            isCameraActive = !isCameraActive;
+            const cameraButton = document.getElementById("camera-button");
+            
+            if (isCameraActive) {
+                cameraButton.classList.add("active");
+                fetch("http://127.0.0.1:5000/start-scanning", {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" }
+                })
+                .then(response => response.json())
+                .then(data => {
+                    if (!isPlaying) startEmotionUpdates();
+                })
+                .catch(error => {
+                    console.error("Error:", error);
+                    isCameraActive = false;
+                    cameraButton.classList.remove("active");
+                    document.getElementById('emotion-status').textContent = "Camera error";
+                });
+            } else {
+                cameraButton.classList.remove("active");
+                stopEmotionUpdates();
+                document.getElementById('emotion-status').textContent = "Camera off";
+            }
+        });
+
+        document.getElementById("progressBar").addEventListener("input", function(event) {
+            if (totalDuration > 0) {
+                const newPosition = (event.target.value / 100) * totalDuration;
+                fetch("http://127.0.0.1:5000/seek", {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({ position_ms: Math.floor(newPosition) })
+                }).catch(console.error);
+            }
+        });
+
+        document.getElementById("likeButton").addEventListener("click", toggleLike);
+
+        function openModal() {
+            document.getElementById("loginModal").style.display = "flex";
+        }
+
+        function closeModal() {
+            document.getElementById("loginModal").style.display = "none";
+        }
+
+        // Close modal when clicking outside
+        window.addEventListener('click', function(event) {
+            if (event.target === document.getElementById('loginModal')) {
+                document.getElementById('loginModal').style.display = 'none';
+            }
+        });
+    </script>
+</body>
+</html>

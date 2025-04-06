@@ -127,7 +127,7 @@ class EmotionDetector:
         self.current_emotion = detected_emotion
         if detected_emotion != "nothing":
             self.emotion_window.append(current_emotion_num)
-            if len(self.emotion_window) > 10:
+            if len(self.emotion_window) > 5:
                 self.emotion_window.pop(0)
         
         # Display current emotion in corner

@@ -98,22 +98,22 @@ button.verify-btn:hover {
 
 /* OTHER BUTTON */
 button {
-    background: rgba(255, 255, 255, 0.05);
-    border: 1px solid rgba(255, 255, 255, 0.1);
-    width: 100%;
-    padding: 12px;
+    background: linear-gradient(90deg, #ff003c, #ff4f6f);
     color: #ffffff;
     font-weight: bold;
-    font-size: 16px;
-    border-radius: 50px;
     cursor: pointer;
-    margin-top: 10px;
+    border-radius: 50px;
+    padding: 12px;
+    border: none;
+    font-size: 16px;
+    width: 100%;
     transition: all 0.3s ease-in-out;
 }
 
 button:hover {
-    background: rgba(255, 255, 255, 0.12);
+    background: linear-gradient(90deg, #ff4f6f, #ff003c);
     transform: scale(1.05);
+    box-shadow: 0 0 20px #ff1a4f;
 }
 
 /* LINKS */

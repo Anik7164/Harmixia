@@ -74,8 +74,9 @@ input[type="number"]:focus {
     box-shadow: 0 0 10px #ff003c;
 }
 
-/* LOGIN / VERIFY BUTTON */
-input[type="submit"] {
+/* SUBMIT BUTTON (Login / OTP Verify) */
+input[type="submit"],
+button.verify-btn {
     background: linear-gradient(90deg, #ff003c, #ff4f6f);
     color: #ffffff;
     font-weight: bold;
@@ -88,7 +89,8 @@ input[type="submit"] {
     transition: all 0.3s ease-in-out;
 }
 
-input[type="submit"]:hover {
+input[type="submit"]:hover,
+button.verify-btn:hover {
     background: linear-gradient(90deg, #ff4f6f, #ff003c);
     transform: scale(1.05);
     box-shadow: 0 0 20px #ff1a4f;

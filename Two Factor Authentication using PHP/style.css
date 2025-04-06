@@ -1,9 +1,9 @@
 @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600&display=swap');
 
 body {
-    background: url('emotion-music-bg.jpg') no-repeat center center/cover;
+    background: url('loginBackground.jpg') no-repeat center center/cover;
     font-family: 'Inter', sans-serif;
-    color: #ffffff;
+    color: #f2f2f2;
     margin: 0;
     padding: 0;
     display: flex;
@@ -11,7 +11,8 @@ body {
     align-items: center;
     justify-content: center;
     height: 100vh;
-    backdrop-filter: blur(8px);
+    backdrop-filter: blur(10px);
+    background-color: #000000; /* fallback background */
 }
 
 /* HEADER */
@@ -25,84 +26,56 @@ header {
 header h1 {
     font-size: 32px;
     font-weight: bold;
-    color: #fff;
-    text-shadow: 0 0 15px #1db954, 0 0 30px #1db954;
-    animation: glow 1.5s infinite alternate;
+    color: #ffffff;
+    text-shadow: 0 0 15px #ff003c, 0 0 40px #ff1a4f;
+    animation: glowRed 1.5s infinite alternate;
 }
 
 /* CONTAINER */
 #container {
-    background: rgba(0, 0, 0, 0.8);
-    border-radius: 15px;
+    background: rgba(0, 0, 0, 0.95);
+    border-radius: 20px;
     padding: 40px;
     width: 380px;
     text-align: center;
-    box-shadow: 0 0 15px rgba(29, 185, 84, 0.8), 0 0 30px rgba(29, 185, 84, 0.5);
-    backdrop-filter: blur(5px);
+    box-shadow: 0 0 25px rgba(255, 0, 60, 0.3), 0 0 60px rgba(255, 0, 60, 0.1);
+    backdrop-filter: blur(6px);
     animation: fadeIn 1s ease-in-out;
 }
 
 /* INPUT FIELDS */
 label {
     font-size: 14px;
-    color: #b3b3b3;
+    color: #888;
     text-align: left;
     display: block;
-    margin-bottom: 5px;
+    margin-bottom: 6px;
 }
 
 input[type="text"],
-input[type="password"],
-input[type="number"] {
+input[type="password"] {
     width: 100%;
     height: 45px;
     padding: 12px;
-    background: rgba(255, 255, 255, 0.1);
-    color: #fff;
-    border: none;
-    border-radius: 5px;
+    background: #111111;
+    color: #ffffff;
+    border: 1px solid #222;
+    border-radius: 6px;
     outline: none;
     transition: 0.3s;
-    margin-bottom: 15px;
+    margin-bottom: 16px;
 }
 
 input[type="text"]:focus,
-input[type="password"]:focus,
-input[type="number"]:focus {
-    border: 1px solid #1db954;
-    box-shadow: 0 0 10px #1db954;
-}
-
-/* OTP INPUT */
-.otp-container {
-    display: flex;
-    justify-content: center;
-    gap: 10px;
-}
-
-.otp-input {
-    width: 45px;
-    height: 50px;
-    font-size: 22px;
-    text-align: center;
-    font-weight: bold;
-    background: rgba(255, 255, 255, 0.1);
-    border: 1px solid rgba(255, 255, 255, 0.3);
-    border-radius: 8px;
-    color: #fff;
-    transition: 0.3s;
-}
-
-.otp-input:focus {
-    border: 1px solid #1db954;
-    box-shadow: 0 0 10px #1db954;
-    transform: scale(1.1);
+input[type="password"]:focus {
+    border: 1px solid #ff003c;
+    box-shadow: 0 0 10px #ff003c;
 }
 
 /* LOGIN BUTTON */
-input[type="submit"], .verify-btn {
-    background: linear-gradient(90deg, #1db954, #00ff99);
-    color: #fff;
+input[type="submit"] {
+    background: linear-gradient(90deg, #ff003c, #ff4f6f);
+    color: #ffffff;
     font-weight: bold;
     cursor: pointer;
     border-radius: 50px;
@@ -113,36 +86,19 @@ input[type="submit"], .verify-btn {
     transition: all 0.3s ease-in-out;
 }
 
-input[type="submit"]:hover, .verify-btn:hover {
-    background: linear-gradient(90deg, #00ff99, #1db954);
+input[type="submit"]:hover {
+    background: linear-gradient(90deg, #ff4f6f, #ff003c);
     transform: scale(1.05);
-    box-shadow: 0 0 20px #00ff99;
-}
-
-/* RESEND OTP */
-.resend-btn {
-    background: none;
-    border: none;
-    color: #1db954;
-    font-size: 14px;
-    cursor: pointer;
-    text-decoration: underline;
-    margin-top: 10px;
-    transition: 0.3s;
-}
-
-.resend-btn:hover {
-    color: #00ff99;
-    text-shadow: 0 0 10px #00ff99;
+    box-shadow: 0 0 20px #ff1a4f;
 }
 
 /* OTHER BUTTON */
 button {
-    background: rgba(255, 255, 255, 0.1);
-    border: none;
+    background: rgba(255, 255, 255, 0.05);
+    border: 1px solid rgba(255, 255, 255, 0.1);
     width: 100%;
     padding: 12px;
-    color: white;
+    color: #ffffff;
     font-weight: bold;
     font-size: 16px;
     border-radius: 50px;
@@ -152,13 +108,13 @@ button {
 }
 
 button:hover {
-    background: rgba(255, 255, 255, 0.2);
+    background: rgba(255, 255, 255, 0.12);
     transform: scale(1.05);
 }
 
 /* LINKS */
 a {
-    color: #1db954;
+    color: #ff003c;
     font-size: 14px;
     text-decoration: none;
 }
@@ -170,15 +126,15 @@ a:hover {
 /* FOOTER */
 p {
     font-size: 14px;
-    color: #b3b3b3;
-    margin-top: 10px;
+    color: #888888;
+    margin-top: 12px;
 }
 
 /* ANIMATIONS */
-@keyframes glow {
-    0% { text-shadow: 0 0 10px #1db954; }
-    50% { text-shadow: 0 0 20px #1db954; }
-    100% { text-shadow: 0 0 10px #1db954; }
+@keyframes glowRed {
+    0% { text-shadow: 0 0 10px #ff003c; }
+    50% { text-shadow: 0 0 20px #ff003c; }
+    100% { text-shadow: 0 0 10px #ff003c; }
 }
 
 @keyframes fadeIn {

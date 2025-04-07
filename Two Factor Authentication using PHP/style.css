@@ -11,7 +11,7 @@ body {
     align-items: center;
     justify-content: center;
     height: 100vh;
-    backdrop-filter: blur(10px);
+    backdrop-filter: blur(5px);
     background-color: #000000;
 }
 
@@ -24,9 +24,9 @@ header {
 }
 
 header h1 {
-    font-size: 32px;
-    font-weight: bold;
-    color: #ffffff;
+    font-size: 40px;
+    font-weight: bold, ;
+    color: #f7070770;
     text-shadow: 0 0 15px #ff003c, 0 0 40px #ff1a4f;
     animation: glowRed 1.5s infinite alternate;
 }

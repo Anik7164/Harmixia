@@ -31,7 +31,7 @@ PLAYLIST_MAP = {
     2: "spotify:playlist:1AJZcd3ZlMhq2DBYVI8z7a",  # Happy
     3: "spotify:playlist:6RugFKjNj9dIGlFhHrZjvD",  # Sad
     4: "spotify:playlist:08Kr4pW2Cgmb7F0bBRZn1Z",  # Angry
-    5: "spotify:playlist:0upbVrtVfl9VpaszZ32W2s"   # Neutral
+    5: "spotify:playlist:7crckZBjA169XB6W1dFKSh"   # Neutral
 }
 
 class EmotionDetector:
@@ -46,7 +46,7 @@ class EmotionDetector:
         self.last_playback_state = False
         self.last_detected_emotion = None
         self.pause_mode = False  # New flag for pause-and-detect mode
-        self.pause_detection_interval = 5  # Seconds between pause checks
+        self.pause_detection_interval = 3  # Seconds between pause checks
             
     def start_scanning(self, pause_mode=False):
         """Initialize camera and start scanning"""
@@ -56,7 +56,7 @@ class EmotionDetector:
             self.start_time = time.time()
             self.emotion_window = []
             self.pause_mode = pause_mode
-            print("Starting emotion scanning in 5 seconds...")
+            print("Starting emotion scanning in 3 seconds...")
             send_emotion_update(1, 0.0)  # Reset to "nothing"
             return True
         return False
@@ -77,8 +77,8 @@ class EmotionDetector:
             return
             
         # Check if 5 seconds have passed since starting
-        if time.time() - self.start_time < 5:
-            remaining = 5 - int(time.time() - self.start_time)
+        if time.time() - self.start_time < 3:
+            remaining = 3 - int(time.time() - self.start_time)
             ret, frame = self.cap.read()
             if ret:
                 cv2.putText(frame, f"Starting in {remaining} seconds...", 
@@ -136,7 +136,7 @@ class EmotionDetector:
                   (10, 30), cv2.FONT_HERSHEY_SIMPLEX, 0.7, status_color, 2)
 
         # Only update if we have enough samples and high confidence (80%)
-        if len(self.emotion_window) >= 5 and max_confidence > 0.8:
+        if len(self.emotion_window) >= 5 and max_confidence > 0.7:
             # Get most common emotion in window
             dominant_emotion = Counter(self.emotion_window).most_common(1)[0][0]
             

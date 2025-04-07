@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Harmixia</title>
     <style>
-        /* Updated styles for the user controls section */
+        
         .user-controls {
             display: flex;
             align-items: center;
@@ -27,26 +27,26 @@
             transition: all 0.3s ease;
         }
 
-        /* Remove the old emotion status from song info */
+        
         .song-info .emotion-status {
             display: none;
         }
     </style>
     <script>
-        // Emotion to theme mapping
+        
         const emotionThemes = {
-            1: 'onestepcloser.css',    // nothing (default)
-            2: 'happy.css',            // happy
-            3: 'sad.css',              // sad
-            4: 'angry.css',            // angry
-            5: 'neutral.css'           // neutral
+            1: 'onestepcloser.css',    
+            2: 'happy.css',            
+            3: 'sad.css',              
+            4: 'angry.css',            
+            5: 'neutral.css'           
         };
 
         function changeTheme(emotionNumber) {
             const themeFile = emotionThemes[emotionNumber] || emotionThemes[1];
             document.getElementById('theme-style').setAttribute('href', themeFile);
             
-            // Update UI to show current emotion beside camera button
+            
             const emotionLabels = {
                 1: "No face detected",
                 2: "Happy mood detected! 🎉",
@@ -61,7 +61,7 @@
 </head>
 <body>
     <div class="bar-container">
-        <!-- Left Bar - Player Controls -->
+        
         <div class="bar bar-left">
             <div class="player-controls">
                 <div class="album-art-container">
@@ -69,7 +69,7 @@
                 </div>
                 <div class="song-info">
                     <p id="currentSong" class="song-title">Not Playing</p>
-                    <!-- Removed the emotion status from here -->
+                    
                 </div>
                 <div class="progress-container">
                     <input type="range" id="progressBar" min="0" max="100" value="0" class="progress-bar">
@@ -91,7 +91,7 @@
             </div>
         </div>
 
-        <!-- Middle Bar - Content -->
+        
         <div class="bar bar-middle">
             <div class="user-controls">
                 <div class="camera-container">
@@ -109,14 +109,14 @@
                 </span>
             </div>
             
-            <!-- Recently Played -->
+            
             <div class="content-section">
                 <h2>Recently Played</h2>
                 <div id="recentlyPlayed" class="recently-played-container"></div>
             </div>
         </div>
 
-        <!-- Right Container - Playlists -->
+        
         <div class="separate-right-container">
             <div class="separate-part separate-top">
                 <button id="fetchPlaylistButton" class="playlist-button">
@@ -135,7 +135,7 @@
         </div>
     </div>
 
-    <!-- Login Modal -->
+    
     <div id="loginModal" class="modal">
         <div class="modal-content">
             <div class="modal-header">
@@ -162,7 +162,7 @@
         let emotionInterval = null;
         let isPlaying = false;
         let isCameraActive = false;
-        let currentEmotion = 1; // Track current emotion (1 = default)
+        let currentEmotion = 1; 
 
         function sendRequest(url, method = "POST", body = null) {
             return fetch(url, { 
@@ -473,15 +473,15 @@
             .catch(error => console.error("Error:", error));
         }
 
-        // Initialize intervals
+        
         setInterval(updateProgress, 1000);
         setInterval(fetchCurrentSong, 3000);
         
-        // Initial data load
+        
         fetchCurrentSong();
         updateRecentlyPlayed();
 
-        // Event listeners
+        
         document.getElementById("fetchPlaylistButton").addEventListener("click", fetchPlaylist);
         document.getElementById("fetchLikedSongsButton").addEventListener("click", fetchLikedSongs);
 
@@ -583,7 +583,7 @@
             document.getElementById("loginModal").style.display = "none";
         }
 
-        // Close modal when clicking outside
+        
         window.addEventListener('click', function(event) {
             if (event.target === document.getElementById('loginModal')) {
                 document.getElementById('loginModal').style.display = 'none';

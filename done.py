@@ -27,7 +27,7 @@ CONFIG = {
     }
 }
 
-# Initialize Spotify client
+
 sp = spotipy.Spotify(auth_manager=SpotifyOAuth(
     client_id=CONFIG["SPOTIPY_CLIENT_ID"],
     client_secret=CONFIG["SPOTIPY_CLIENT_SECRET"],
@@ -35,11 +35,11 @@ sp = spotipy.Spotify(auth_manager=SpotifyOAuth(
     scope="user-modify-playback-state user-read-playback-state user-read-recently-played playlist-modify-public playlist-modify-private playlist-read-private"
 ))
 
-# Global state
-current_emotion = 1  # Default to 1 (nothing)
+
+current_emotion = 1  
 recently_played_songs = []
 
-# Helper functions
+
 def load_recently_played():
     """Load recently played songs from JSON file"""
     try:
@@ -93,7 +93,7 @@ def update_recently_played():
                 "image": current_track["album"]["images"][0]["url"] if current_track["album"]["images"] else ""
             }
             
-            # Update recently played list (no duplicates, max 10 items)
+            
             recently_played_songs = [
                 song for song in recently_played_songs 
                 if song['uri'] != new_song['uri']
@@ -120,10 +120,10 @@ def get_liked_tracks():
         app.logger.error(f"Error getting liked tracks: {str(e)}")
         return []
 
-# Initialize with loaded data
+
 recently_played_songs = load_recently_played()
 
-# Routes
+
 @app.route('/update-emotion', methods=['POST'])
 def update_emotion():
     """Receive emotion updates from the emotion detection script"""
@@ -149,7 +149,7 @@ def get_current_emotion():
 def start_scanning():
     """Start emotion detection script"""
     try:
-        script_path = os.path.abspath("emotion_spotify1.py")
+        script_path = os.path.abspath("emotion_spotify.py")
         if not os.path.exists(script_path):
             return jsonify({"error": f"File not found at {script_path}"}), 404
 
@@ -489,7 +489,7 @@ def dislike_song():
                 "message": "Song not found in liked playlist"
             }), 200
             
-        # Find the track to remove
+        
         results = sp.playlist_tracks(playlist_id)
         track_to_remove = next(
             ({"uri": item['track']['uri'], "positions": [item['track']['track_number'] - 1]}

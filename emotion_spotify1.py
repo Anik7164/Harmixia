@@ -136,7 +136,7 @@ class EmotionDetector:
                   (10, 30), cv2.FONT_HERSHEY_SIMPLEX, 0.7, status_color, 2)
 
         # Only update if we have enough samples and high confidence (80%)
-        if len(self.emotion_window) >= 5 and max_confidence > 0.7:
+        if len(self.emotion_window) >= 5 and max_confidence > 0.5:
             # Get most common emotion in window
             dominant_emotion = Counter(self.emotion_window).most_common(1)[0][0]
             

@@ -5,19 +5,19 @@ from collections import Counter
 from deepface import DeepFace
 from spotify_auth import sp  
 
-# Face detection setup
+
 face_cascade = cv2.CascadeClassifier(cv2.data.haarcascades + 'haarcascade_frontalface_default.xml')
 
-# Emotion mappings
+
 EMOTION_MAP = {
     "happy": 2,
     "sad": 3,
     "angry": 4,
     "neutral": 5,
-    "nothing": 1  # Default when no face detected
+    "nothing": 1  
 }
 
-# Color mappings for each emotion (BGR format)
+
 EMOTION_COLORS = {
     "happy": (0, 255, 255),    # Yellow
     "sad": (255, 0, 0),        # Blue
